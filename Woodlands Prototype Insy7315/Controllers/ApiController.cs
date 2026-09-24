@@ -1,6 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+<<<<<<< Updated upstream
 using Supabase.Gotrue;
 using Woodlands_Prototype_Insy7315.Models;
+=======
+using Microsoft.AspNetCore.Authorization;
+using Supabase.Gotrue;
+using Woodlands_Prototype_Insy7315.Models;
+using Woodlands_Prototype_Insy7315.Services;
+>>>>>>> Stashed changes
 using static Supabase.Gotrue.Constants;
 using PostgrestConstants = Supabase.Postgrest.Constants;
 using SupabaseClient = Supabase.Client;
@@ -12,13 +19,28 @@ namespace Woodlands_Prototype_Insy7315.Controllers
     public class ApiController : ControllerBase
     {
         private readonly SupabaseClient _supabase;
+<<<<<<< Updated upstream
+=======
+        private readonly EnquiryService _enquiryService;
+        private readonly ProductService _productService;
+>>>>>>> Stashed changes
         private readonly ILogger<ApiController> _logger;
 
         public ApiController(
             SupabaseClient supabase,
+<<<<<<< Updated upstream
             ILogger<ApiController> logger)
         {
             _supabase = supabase;
+=======
+            EnquiryService enquiryService,
+            ProductService productService,
+            ILogger<ApiController> logger)
+        {
+            _supabase = supabase;
+            _enquiryService = enquiryService;
+            _productService = productService;
+>>>>>>> Stashed changes
             _logger = logger;
         }
 
@@ -27,6 +49,7 @@ namespace Woodlands_Prototype_Insy7315.Controllers
         {
             try
             {
+<<<<<<< Updated upstream
                 var response = await _supabase
                     .From<SupabaseProduct>()
                     .Select("*")
@@ -39,6 +62,9 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                     .Get();
 
                 return Ok(response.Models);
+=======
+                return Ok(await _productService.GetProducts());
+>>>>>>> Stashed changes
             }
             catch (Exception ex)
             {
@@ -52,6 +78,7 @@ namespace Woodlands_Prototype_Insy7315.Controllers
         {
             try
             {
+<<<<<<< Updated upstream
                 var response = await _supabase
                     .From<SupabaseProduct>()
                     .Where(p => p.Id == id)
@@ -61,6 +88,13 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                     return NotFound();
 
                 return Ok(response);
+=======
+                var product = await _productService.GetProduct(id);
+                if (product == null)
+                    return NotFound();
+
+                return Ok(product);
+>>>>>>> Stashed changes
             }
             catch (Exception ex)
             {
@@ -259,6 +293,7 @@ namespace Woodlands_Prototype_Insy7315.Controllers
         {
             try
             {
+<<<<<<< Updated upstream
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
@@ -269,6 +304,10 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                 var quoteRequest = new SupabaseQuoteRequest
                 {
                     QuoteCode = quoteCode,
+=======
+                var request = new ContactRequest
+                {
+>>>>>>> Stashed changes
                     FirstName = dto.FirstName,
                     LastName = dto.LastName,
                     Email = dto.Email,
@@ -276,6 +315,7 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                     Branch = dto.Branch,
                     Service = dto.Service,
                     Message = dto.Message,
+<<<<<<< Updated upstream
                     ProductId = dto.ProductId,
                     Status = "pending",
                     CreatedAt = DateTime.UtcNow
@@ -288,6 +328,19 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                 return Ok(new
                 {
                     quoteCode,
+=======
+                    ProductId = dto.ProductId
+                };
+
+                if (!TryValidateModel(request))
+                    return ValidationProblem(ModelState);
+
+                var quote = await _enquiryService.SubmitEnquiry(request);
+
+                return Ok(new
+                {
+                    quoteCode = quote.QuoteCode,
+>>>>>>> Stashed changes
                     message = "Quote request created successfully"
                 });
             }
@@ -303,6 +356,118 @@ namespace Woodlands_Prototype_Insy7315.Controllers
             }
         }
 
+<<<<<<< Updated upstream
+=======
+        [HttpPost("enquiries")]
+        public async Task<IActionResult> SubmitEnquiry(
+            [FromBody] ContactRequest request)
+        {
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            try
+            {
+                var enquiry = await _enquiryService.SubmitEnquiry(request);
+                return Created($"api/enquiries/{enquiry.QuoteCode}", new
+                {
+                    quoteCode = enquiry.QuoteCode,
+                    status = enquiry.Status,
+                    message = "Enquiry submitted successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting enquiry");
+                return StatusCode(500, new { error = "Unable to submit enquiry." });
+            }
+        }
+
+        [Authorize(Roles = "Admin,Manager (Soweto),Manager (Roodepoort),Manager (Randfontein)")]
+        [HttpPatch("enquiries/{identifier}/assignment")]
+        public async Task<IActionResult> AssignEnquiry(
+            string identifier,
+            [FromBody] AssignmentDto dto)
+        {
+            try
+            {
+                var enquiry = await _enquiryService.AssignEnquiry(identifier, dto.Branch);
+                return enquiry == null ? NotFound() : Ok(enquiry);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [Authorize(Roles = "Admin,Manager (Soweto),Manager (Roodepoort),Manager (Randfontein)")]
+        [HttpPatch("enquiries/{identifier}/status")]
+        public async Task<IActionResult> UpdateEnquiryStatus(
+            string identifier,
+            [FromBody] StatusDto dto)
+        {
+            try
+            {
+                var enquiry = await _enquiryService.UpdateStatus(identifier, dto.Status);
+                return enquiry == null ? NotFound() : Ok(enquiry);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("products")]
+        public async Task<IActionResult> CreateProduct(
+            [FromBody] Product product)
+        {
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            try
+            {
+                var created = await _productService.CreateProduct(product);
+                return CreatedAtAction(
+                    nameof(GetProduct),
+                    new { id = created.Id },
+                    created);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("products/{id}")]
+        public async Task<IActionResult> UpdateProduct(
+            string id,
+            [FromBody] Product product)
+        {
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            try
+            {
+                var updated = await _productService.UpdateProduct(id, product);
+                return updated == null ? NotFound() : Ok(updated);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("products/{id}")]
+        public async Task<IActionResult> DeleteProduct(string id)
+        {
+            return await _productService.DeleteProduct(id)
+                ? NoContent()
+                : NotFound();
+        }
+
+>>>>>>> Stashed changes
         [HttpPost("auth/register")]
         public async Task<IActionResult> Register(
             [FromBody] RegisterDto dto)
@@ -445,5 +610,18 @@ namespace Woodlands_Prototype_Insy7315.Controllers
             public string Message { get; set; } = "";
             public string ProductId { get; set; } = "";
         }
+<<<<<<< Updated upstream
+=======
+
+        public class AssignmentDto
+        {
+            public string Branch { get; set; } = "";
+        }
+
+        public class StatusDto
+        {
+            public string Status { get; set; } = "";
+        }
+>>>>>>> Stashed changes
     }
 }
