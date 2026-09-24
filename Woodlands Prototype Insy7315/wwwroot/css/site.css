@@ -53,3 +53,19 @@ h1, h2, h3 {
     .hero-copy .text-tan {
         text-shadow: 0 0 14px rgba(0, 0, 0, 0.9), 0 2px 4px rgba(0, 0, 0, 0.9);
     }
+
+/* Dim empty categories on the homepage grid */
+.category-empty {
+    opacity: 0.55;
+    filter: grayscale(0.6);
+    transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+    .category-empty:hover {
+        opacity: 0.75;
+        filter: grayscale(0.35);
+    }
+
+    .category-empty .text-tan {
+        color: #a0a0a0; /* grey the "Coming soon" text */
+    }
