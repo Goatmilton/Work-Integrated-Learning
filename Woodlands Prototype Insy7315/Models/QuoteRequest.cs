@@ -38,7 +38,8 @@ namespace Woodlands_Prototype_Insy7315.Models
 
         // Retaining the string for frontend JSON, mapping the real ID for the database
         [JsonPropertyName("branch")]
-        public string? BranchName { get; set; }
+        public string? Branch { get; set; }
+
 
         public long? BranchId { get; set; }
         [ForeignKey("BranchId")]
