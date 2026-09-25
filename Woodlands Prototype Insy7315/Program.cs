@@ -1,10 +1,12 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Woodlands_Prototype_Insy7315.Data;
+using Woodlands_Prototype_Insy7315.Models; 
 using Woodlands_Prototype_Insy7315.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Register Azure SQL Database Context
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
@@ -15,10 +17,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-// Register HttpClient to talk to the Node API
+
 builder.Services.AddHttpClient("NodeApi", client =>
 {
     var baseUrl = builder.Configuration["NodeApi:BaseUrl"] ?? "http://localhost:5000/";
@@ -27,14 +34,13 @@ builder.Services.AddHttpClient("NodeApi", client =>
 
 builder.Services.AddScoped<SupabaseAuthService>();
 
-// CORS for the Android app
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAndroidApp", policy =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
-// Cookie authentication
+
 builder.Services
     .AddAuthentication(options =>
     {
@@ -54,6 +60,22 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        await DbInitializer.SeedAsync(services);
+        Console.WriteLine("--> Azure SQL Database Seeded Successfully with WoodLinkData.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"--> Error seeding database: {ex.Message}");
+    }
+}
+
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -66,11 +88,8 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseCors("AllowAndroidApp");
-
 app.UseAuthentication();
 app.UseAuthorization();
 
