@@ -57,10 +57,6 @@ class LocalDb(context: Context) : SQLiteOpenHelper(context, "woodlands_mobile.db
         service(db, 4, "Cutting & Edging", "CNC cutting and edge banding")
         service(db, 5, "General Enquiry", "Anything else")
 
-        testimonial(db, 1, "Thabo Mokoena", "Homeowner", "Soweto", 5, "Woodlands transformed our kitchen completely. The team was professional from the first measurement to the final installation. The PG Bison finish looks incredible and has held up perfectly two years on.", "Modern Kitchen Suite")
-        testimonial(db, 2, "Priya Naidoo", "Interior Designer", "Johannesburg", 5, "As a designer I need a supplier I can trust with tight tolerances. Woodlands delivers every time — the curved kitchen units for a recent client project were flawless.", "Curved Luxury Kitchen")
-        testimonial(db, 3, "Lebo Sithole", "Building Contractor", "Randfontein", 5, "I've used the Randfontein branch for over three years. Bulk cutting orders are ready same day, and the edge-banding quality is consistent every single time. Reliable partner for any contractor.", "Bulk Cutting & Edging")
-        testimonial(db, 4, "Sandra Van Wyk", "Homeowner", "Roodepoort", 5, "My built-in cupboards look like they came straight out of a magazine. The team measured twice, cut once, and the installation was immaculate. I especially love the soft-close doors — such a premium touch.", "Built-In Bedroom Cupboards")
 
         faq(db, 1, "Materials", "What is PG Bison?", "PG Bison is a leading South African chipboard and melamine manufacturer. We use their premium ranges for all our cabinetry, offering a vast colour and finish palette plus exceptional durability.")
         faq(db, 2, "Process", "What does your installation service include?", "Our installers handle delivery, assembly, and final installation. We measure twice, cut once, and return your home looking immaculate — no mess left behind.")

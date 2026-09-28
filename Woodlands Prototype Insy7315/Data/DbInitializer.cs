@@ -59,12 +59,6 @@ namespace Woodlands_Prototype_Insy7315.Data
                 await context.SaveChangesAsync();
             }
 
-            if (!await context.Testimonials.AnyAsync())
-            {
-
-                await context.Testimonials.AddRangeAsync(WoodLinkData.Testimonials);
-                await context.SaveChangesAsync();
-            }
         }
     }
 }

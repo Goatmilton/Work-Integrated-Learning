@@ -5,6 +5,7 @@ namespace Woodlands_Prototype_Insy7315.Models
     public class RegisterViewModel
     {
         [Required]
+        [StringLength(100, MinimumLength = 2)]
         [Display(Name = "Full Name")]
         public string FullName { get; set; } = "";
 
@@ -26,5 +27,10 @@ namespace Woodlands_Prototype_Insy7315.Models
         [Compare(nameof(Password))]
         [Display(Name = "Confirm Password")]
         public string ConfirmPassword { get; set; } = "";
+
+        [Required]
+        [Range(typeof(bool), "true", "true", ErrorMessage = "Please read the privacy notice before creating an account.")]
+        [Display(Name = "Privacy notice acknowledgement")]
+        public bool PrivacyAcknowledged { get; set; }
     }
 }
