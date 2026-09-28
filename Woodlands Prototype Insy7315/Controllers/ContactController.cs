@@ -75,10 +75,7 @@ namespace Woodlands_Prototype_Insy7315.Controllers
         public async Task<IActionResult> Index(ContactRequest request)
         {
             // Block admin/manager users from submitting quotes
-            if (User.IsInRole("Admin") ||
-                User.IsInRole("Manager (Soweto)") ||
-                User.IsInRole("Manager (Roodepoort)") ||
-                User.IsInRole("Manager (Randfontein)"))
+            if (User.IsInRole(IdentitySeederRoles.Admin) || User.IsInRole(IdentitySeederRoles.Manager))
             {
                 return Forbid();
             }
@@ -124,13 +121,13 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                 var payload = new
                 {
                     quote_code = quoteCode,
-                    first_name = request.FirstName,
-                    last_name = request.LastName,
+                    first_name = Services.InputSanitizer.StripHtml(request.FirstName),
+                    last_name = Services.InputSanitizer.StripHtml(request.LastName),
                     email = request.Email,
                     phone = request.Phone,
                     branch = request.Branch,
                     service = request.Service,
-                    message = request.Message,
+                    message = Services.InputSanitizer.StripHtml(request.Message),
                     product_id = request.ProductId ?? "",
                     status = "pending"
                 };

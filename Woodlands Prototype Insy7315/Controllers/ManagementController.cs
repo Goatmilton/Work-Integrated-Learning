@@ -6,7 +6,7 @@ using Woodlands_Prototype_Insy7315.Models;
 
 namespace Woodlands_Prototype_Insy7315.Controllers
 {
-    [Authorize(Roles = "Admin,Manager (Soweto),Manager (Roodepoort),Manager (Randfontein)")]
+    [Authorize(Roles = "Admin,Manager")]
     public class ManagementController : Controller
     {
         private readonly IHttpClientFactory _http;
