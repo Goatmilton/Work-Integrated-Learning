@@ -159,5 +159,26 @@ namespace Woodlands_Prototype_Insy7315.Data
                 Image = "/images/products/Floating TV-9.jpeg", Cta = "View TV Stands", Link = "/Products?category=tv-stands" },
         };
 
+        public static List<Testimonial> Testimonials => new()
+        {
+            new Testimonial { Id = 1, Name = "Thabo Mokoena", Role = "Homeowner", Location = "Soweto", Rating = 5, Project = "Full Kitchen Renovation",
+                Review = "Woodlands did my entire kitchen from scratch. The finish on the PG Bison boards is absolutely stunning — my neighbours keep asking who did it. Professional team, on time, and within budget." },
+            new Testimonial { Id = 2, Name = "Priya Naidoo", Role = "Interior Designer", Location = "Johannesburg", Rating = 5, Project = "Multiple Residential Projects",
+                Review = "As a designer, I'm very particular about material quality and precision. Woodlands consistently delivers flawless cuts and edge-banding that make my clients' projects look polished. My go-to supplier." },
+            new Testimonial { Id = 3, Name = "Lebo Sithole", Role = "Building Contractor", Location = "Randfontein", Rating = 5, Project = "Bulk Cutting & Edging",
+                Review = "I've used the Randfontein branch for over three years. Bulk cutting orders are ready same day, and the edge-banding quality is consistent every single time. Reliable partner for any contractor." },
+            new Testimonial { Id = 4, Name = "Sandra Van Wyk", Role = "Homeowner", Location = "Roodepoort", Rating = 5, Project = "Built-In Bedroom Cupboards",
+                Review = "My built-in cupboards look like they came straight out of a magazine. The team measured twice, cut once, and the installation was immaculate. I especially love the soft-close doors — such a premium touch." },
+            new Testimonial { Id = 5, Name = "Mpho Dlamini", Role = "Property Developer", Location = "Gauteng", Rating = 5, Project = "Multi-Unit Development",
+                Review = "We fitted 12 units for a new development using Woodlands. Three branches made logistics easy — we split orders between Soweto and Roodepoort and still got everything on schedule. Quality always top-notch." },
+            new Testimonial { Id = 6, Name = "Anita Joubert", Role = "Homeowner", Location = "Soweto", Rating = 4, Project = "Custom TV Unit",
+                Review = "The TV unit they built for my lounge is exactly what I had in mind — floating, clean lines, with enough storage for all our media equipment. Good communication throughout. Very satisfied." },
+            new Testimonial { Id = 7, Name = "Kagiso Nkosi", Role = "Architect", Location = "Johannesburg", Rating = 5, Project = "High-End Kitchen Suite",
+                Review = "Specified Woodlands for a high-end residential project. The CNC precision on the kitchen cabinets was exceptional — tolerances I'd struggle to find elsewhere at this price point. Will specify again." },
+            new Testimonial { Id = 8, Name = "Fatima Essack", Role = "Homeowner", Location = "Roodepoort", Rating = 5, Project = "Kitchen Units + Island",
+                Review = "From the initial quote to the final installation, the process was smooth and professional. The team cleaned up completely after themselves. The kitchen is everything I dreamed of." },
+            new Testimonial { Id = 9, Name = "Deon Pretorius", Role = "DIY Builder", Location = "Randfontein", Rating = 5, Project = "Repeat Cutting & Edging Orders",
+                Review = "I build my own cabinets and Woodlands does all my cutting and edging. Same-day service on most orders, and the cut precision is spot on every time. Best cutting service in the West Rand." },
+        };
     }
 }

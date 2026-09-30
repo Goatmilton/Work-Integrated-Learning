@@ -5,22 +5,20 @@ namespace Woodlands_Prototype_Insy7315.Models
 {
     public class Service
     {
-        [Key]
         [JsonPropertyName("id")]
         public int Id { get; set; }
 
-        [Required]
+        //[Required]
         [StringLength(120)]
         [JsonPropertyName("name")]
         public string Name { get; set; } = "";
 
         [StringLength(1000)]
         [JsonPropertyName("description")]
-        public string Description { get; set; } = "";
+        public string? Description { get; set; } = "";
 
-        [StringLength(500)]
         [JsonPropertyName("image")]
-        public string Image { get; set; } = "";
+        public string? Image { get; set; } = "";
 
         [JsonPropertyName("is_active")]
         public bool IsActive { get; set; } = true;

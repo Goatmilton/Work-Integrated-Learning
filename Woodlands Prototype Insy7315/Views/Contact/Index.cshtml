@@ -130,6 +130,10 @@
                         <span asp-validation-for="Message" class="text-[#b3261e] text-xs mt-1.5 block"></span>
                     </div>
 
+                    <button type="submit" class="flex items-center justify-center gap-2 w-full py-3.5 bg-accent hover:bg-accent-600 text-white font-bold rounded-lg transition-all hover:shadow-lg">
+                        &#9993; Submit Quote Request
+                    </button>
+                    <p class="text-center text-muted text-xs mt-3">We use these details to respond to your request. We do not sign you up for marketing.</p>
                     <div class="mb-5">
                         <label class="flex items-start gap-2 text-sm text-ink">
                             <input asp-for="PrivacyAcknowledged" class="mt-1 accent-brand-700" />
@@ -137,11 +141,6 @@
                         </label>
                         <span asp-validation-for="PrivacyAcknowledged" class="text-[#b3261e] text-xs mt-1.5 block"></span>
                     </div>
-
-                    <button type="submit" class="flex items-center justify-center gap-2 w-full py-3.5 bg-accent hover:bg-accent-600 text-white font-bold rounded-lg transition-all hover:shadow-lg">
-                        &#9993; Submit Quote Request
-                    </button>
-                    <p class="text-center text-muted text-xs mt-3">We use these details to respond to your request. We do not sign you up for marketing.</p>
                 </form>
             </div>
 

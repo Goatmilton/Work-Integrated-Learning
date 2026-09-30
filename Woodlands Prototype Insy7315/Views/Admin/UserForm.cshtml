@@ -2,47 +2,58 @@
 @using Woodlands_Prototype_Insy7315.Models
 @{
     var editing = !string.IsNullOrWhiteSpace(Model.Id);
-    ViewData["Title"] = editing ? "Edit User" : "Add User";
+    ViewData["Title"] = editing ? "Edit User" : "New User";
+    ViewData["Subtitle"] = editing ? "Update this user's account." : "Create a new user account.";
 }
 
-<div class="max-w-2xl mx-auto px-4 py-10">
-    <h1 class="text-3xl font-bold text-brand-700 mb-6" style="font-family:var(--font-display);">@ViewData["Title"]</h1>
-    <div asp-validation-summary="ModelOnly" class="text-sm text-red-600 mb-4"></div>
+<div class="max-w-3xl mx-auto">
 
-    <form asp-action="@(editing ? "EditUser" : "CreateUser")" asp-route-id="@Model.Id" method="post" class="bg-white border border-gray-100 rounded-xl shadow-sm p-6 space-y-5">
+    <form asp-action="@(editing ? "EditUser" : "CreateUser")"
+          asp-route-id="@Model.Id"
+          method="post"
+          class="bg-white rounded-xl border border-line shadow-sm p-6 lg:p-8 space-y-6">
+
         @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div asp-validation-summary="All" class="text-sm text-danger bg-danger/5 border border-danger/20 rounded-lg px-4 py-3"></div>
 
         <div>
-            <label asp-for="FullName" class="field-label"></label>
-            <input asp-for="FullName" class="field" />
-            <span asp-validation-for="FullName" class="text-xs text-red-600"></span>
+            <label asp-for="FullName" class="block text-sm font-semibold text-ink mb-1">
+                Full Name <span class="text-danger">*</span>
+            </label>
+            <input asp-for="FullName" class="w-full rounded-lg border border-line px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700" placeholder="e.g. Thabo Mokoena" />
+            <span asp-validation-for="FullName" class="text-xs text-danger"></span>
         </div>
 
         <div class="grid md:grid-cols-2 gap-5">
             <div>
-                <label asp-for="Email" class="field-label"></label>
-                <input asp-for="Email" class="field" />
-                <span asp-validation-for="Email" class="text-xs text-red-600"></span>
+                <label asp-for="Email" class="block text-sm font-semibold text-ink mb-1">
+                    Email <span class="text-danger">*</span>
+                </label>
+                <input asp-for="Email" type="email" class="w-full rounded-lg border border-line px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700" placeholder="user@example.com" />
+                <span asp-validation-for="Email" class="text-xs text-danger"></span>
             </div>
             <div>
-                <label asp-for="PhoneNumber" class="field-label"></label>
-                <input asp-for="PhoneNumber" class="field" />
+                <label asp-for="PhoneNumber" class="block text-sm font-semibold text-ink mb-1">Phone Number</label>
+                <input asp-for="PhoneNumber" class="w-full rounded-lg border border-line px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700" placeholder="e.g. 071 234 5678" />
             </div>
         </div>
 
         <div class="grid md:grid-cols-2 gap-5">
             <div>
-                <label asp-for="Role" class="field-label"></label>
-                <select asp-for="Role" class="field">
+                <label asp-for="Role" class="block text-sm font-semibold text-ink mb-1">Role <span class="text-danger">*</span></label>
+                <select asp-for="Role" class="w-full rounded-lg border border-line px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700">
                     @foreach (var role in IdentitySeederRoles.All)
                     {
                         <option value="@role">@role</option>
                     }
                 </select>
+                <span asp-validation-for="Role" class="text-xs text-danger"></span>
             </div>
             <div>
-                <label asp-for="Branch" class="field-label"></label>
-                <select asp-for="Branch" class="field">
+                <label asp-for="Branch" class="block text-sm font-semibold text-ink mb-1">Branch</label>
+                <select asp-for="Branch" class="w-full rounded-lg border border-line px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700">
                     <option value="">No branch</option>
                     <option value="Soweto">Soweto</option>
                     <option value="Roodepoort">Roodepoort</option>
@@ -52,23 +63,33 @@
         </div>
 
         <div>
-            <label asp-for="Password" class="field-label">@(editing ? "New Password (optional)" : "Password")</label>
-            <input asp-for="Password" class="field" />
-            <span asp-validation-for="Password" class="text-xs text-red-600"></span>
+            <label asp-for="Password" class="block text-sm font-semibold text-ink mb-1">
+                @(editing ? "New Password (leave blank to keep current)" : "Password")
+                @if (!editing)
+                {
+                    <span class="text-danger">*</span>
+                }
+            </label>
+            <input asp-for="Password" type="password" class="w-full rounded-lg border border-line px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700" placeholder="Minimum 8 characters" />
+            <span asp-validation-for="Password" class="text-xs text-danger"></span>
         </div>
 
-        <label class="flex items-center gap-2 text-sm">
-            <input asp-for="Active" />
-            Active account
+        <label class="flex items-center gap-2 text-sm text-ink">
+            <input asp-for="Active" type="checkbox" class="rounded border-line" />
+            Active account (can sign in)
         </label>
 
-        <div class="bg-blue-50 text-blue-800 rounded-lg p-4 text-sm">
-            Only the Admin role can change account types. Public registration always creates Customer accounts.
+        <div class="bg-brand-700/5 border border-brand-700/15 text-brand-700 rounded-lg p-4 text-xs leading-relaxed">
+            <strong>Note:</strong> Only the Admin role can manage user accounts. Public registration always creates Customer accounts.
         </div>
 
-        <div class="flex gap-3">
-            <button type="submit" class="btn btn-secondary">Save User</button>
-            <a asp-action="Users" class="px-5 py-2.5 rounded-lg border border-gray-200 font-semibold">Cancel</a>
+        <div class="flex gap-3 pt-4 border-t border-line">
+            <button type="submit" class="px-5 py-2.5 rounded-lg bg-brand-700 text-white font-semibold hover:bg-brand-800">
+                @(editing ? "Save changes" : "Create user")
+            </button>
+            <a asp-action="Users" class="px-5 py-2.5 rounded-lg border border-line font-semibold text-ink hover:bg-surface">
+                Cancel
+            </a>
         </div>
     </form>
 </div>

@@ -29,22 +29,20 @@ namespace Woodlands_Prototype_Insy7315.Models
         public string? Password { get; set; }
     }
 
-    // The four canonical RBAC roles seeded by DbInitializer. Branch is a
-    // separate attribute on the user (UserFormViewModel.Branch / ApplicationUser.Branch)
-    // rather than folded into the role name, so a Manager's role check works
-    // the same way regardless of which branch they're assigned to.
     public static class IdentitySeederRoles
     {
         public const string Admin = "Admin";
-        public const string Manager = "Manager";
-        public const string Sales = "Sales";
+        public const string SowetoManager = "Manager (Soweto)";
+        public const string RoodepoortManager = "Manager (Roodepoort)";
+        public const string RandfonteinManager = "Manager (Randfontein)";
         public const string Customer = "Customer";
 
         public static readonly string[] All =
         {
             Admin,
-            Manager,
-            Sales,
+            SowetoManager,
+            RoodepoortManager,
+            RandfonteinManager,
             Customer
         };
     }

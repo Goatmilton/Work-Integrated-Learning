@@ -10,10 +10,27 @@ app.use(cors()); // Allows your C# app to make requests
 app.use(express.json()); // Parses incoming JSON data
 
 // Initialize Supabase
+const clientOptions = {
+    auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+    }
+};
+
 const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_KEY
+    process.env.SUPABASE_KEY,
+    clientOptions
 );
+
+function createAuthClient() {
+    return createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_KEY,
+        clientOptions
+    );
+}
 
 
 // ENDPOINTS
@@ -23,7 +40,7 @@ const supabase = createClient(
 app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     try {
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: authData, error: authError } = await createAuthClient().auth.signInWithPassword({ email, password });
         if (authError || !authData.user) {
             return res.status(401).json({ error: "Invalid email or password." });
         }
@@ -92,7 +109,12 @@ app.post('/api/auth/register', async (req, res) => {
 // APP USERS (Admin management only)
 
 app.get('/api/app-users', async (req, res) => {
-    const { data, error } = await supabase.from('app_users').select('*').order('full_name');
+    let query = supabase.from('app_users').select('*').order('full_name');
+    if (typeof req.query.email === 'string' && req.query.email.trim()) {
+        const escaped = req.query.email.trim().replace(/[\\%_]/g, '\\$&');
+        query = query.ilike('email', escaped);
+    }
+    const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
@@ -241,6 +263,12 @@ app.post('/api/testimonials', async (req, res) => {
     res.status(201).json(data);
 });
 
+app.put('/api/testimonials/:id', async (req, res) => {
+    const { data, error } = await supabase.from('testimonials').update(req.body).eq('id', req.params.id).select();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
 app.delete('/api/testimonials/:id', async (req, res) => {
     const { data, error } = await supabase.from('testimonials').delete().eq('id', req.params.id).select();
     if (error) return res.status(500).json({ error: error.message });
@@ -260,6 +288,12 @@ app.post('/api/faqs', async (req, res) => {
     const { data, error } = await supabase.from('faqs').insert([req.body]).select();
     if (error) return res.status(500).json({ error: error.message });
     res.status(201).json(data);
+});
+
+app.put('/api/faqs/:id', async (req, res) => {
+    const { data, error } = await supabase.from('faqs').update(req.body).eq('id', req.params.id).select();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
 app.delete('/api/faqs/:id', async (req, res) => {

@@ -357,19 +357,15 @@
             // same hidden field the URL input uses, since there's no upload
             // endpoint yet. Swap this for a real upload call (posting fileInput.files[0]
             // and using the returned URL) once the backend supports it.
-            function updateFromFile() {
-                var file = fileInput.files && fileInput.files[0];
-                if (!file) return;
+                    function updateFromFile() {
+            var file = fileInput.files && fileInput.files[0];
+            if (!file) return;
 
-                var reader = new FileReader();
-                reader.onload = function () {
-                    input.value = reader.result;
-                    fileLabel.textContent = file.name;
-                    showPreview(reader.result);
-                    syncImages();
-                };
-                reader.readAsDataURL(file);
-            }
+            // File uploads aren't wired up yet — pasting a URL for now
+            alert('Direct file uploads are coming soon. For now, please paste an image URL (e.g., from Supabase Storage or any hosted image).');
+            fileInput.value = '';
+            fileLabel.textContent = 'Choose from device…';
+        }
 
             input.addEventListener('input', updateFromUrl);
             fileInput.addEventListener('change', updateFromFile);

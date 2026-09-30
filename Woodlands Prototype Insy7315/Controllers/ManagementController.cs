@@ -6,7 +6,7 @@ using Woodlands_Prototype_Insy7315.Models;
 
 namespace Woodlands_Prototype_Insy7315.Controllers
 {
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Admin,Manager (Soweto),Manager (Roodepoort),Manager (Randfontein)")]
     public class ManagementController : Controller
     {
         private readonly IHttpClientFactory _http;
@@ -19,7 +19,7 @@ namespace Woodlands_Prototype_Insy7315.Controllers
             _logger = logger;
         }
 
-        // PRODUCTS 
+        // ==================== PRODUCTS ====================
 
         public async Task<IActionResult> Products(string? category)
         {
@@ -68,25 +68,51 @@ namespace Woodlands_Prototype_Insy7315.Controllers
 
             try
             {
+                // Generate a unique slug id from the title
+                var baseId = CreateSlug(model.Title);
+                if (string.IsNullOrWhiteSpace(baseId))
+                    baseId = "product";
+
+                var id = baseId;
+                var counter = 2;
+                while (await ProductExists(id))
+                {
+                    id = $"{baseId}-{counter++}";
+                }
+
                 var payload = new
                 {
+                    id = id,                                        
                     category = model.Category,
                     title = model.Title,
-                    tagline = model.Tagline,
-                    description = model.Description,
-                    image = model.Image,
+                    tagline = model.Tagline ?? "",
+                    description = model.Description ?? "",
+                    image = model.Image ?? "",
                     gallery = JsonSerializer.Serialize(Lines(model.Gallery)),
                     features = JsonSerializer.Serialize(Lines(model.Features)),
-                    lead_time = model.LeadTime,
+                    finishes = JsonSerializer.Serialize(Lines(model.Finishes)),
+                    lead_time = model.LeadTime ?? "",
                     tag = model.Tag,
                     price = model.Price,
-                    is_from_price = model.IsFromPrice,
+                    is_from_price = model.IsFromPrice
                 };
 
                 var client = _http.CreateClient("NodeApi");
                 var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-                await client.PostAsync("api/products", content);
+                var response = await client.PostAsync("api/products", content);
+                var body = await response.Content.ReadAsStringAsync();
 
+                _logger.LogInformation("CreateProduct response: {Status} | Body: {Body}",
+                    (int)response.StatusCode, body);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Node API create product error: {Error}", body);
+                    ModelState.AddModelError("", "Unable to create the product.");
+                    return View("ProductForm", model);
+                }
+
+                TempData["Success"] = "Product created.";
                 return RedirectToAction(nameof(Products));
             }
             catch (Exception ex)
@@ -162,6 +188,7 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                     return View("ProductForm", model);
                 }
 
+                TempData["Success"] = "Product updated.";
                 return RedirectToAction(nameof(Products));
             }
             catch (Exception ex)
@@ -173,7 +200,6 @@ namespace Woodlands_Prototype_Insy7315.Controllers
             }
         }
 
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteProduct(string id)
@@ -181,19 +207,24 @@ namespace Woodlands_Prototype_Insy7315.Controllers
             try
             {
                 var client = _http.CreateClient("NodeApi");
-                await client.DeleteAsync($"api/products/{id}");
+                var response = await client.DeleteAsync($"api/products/{id}");
+                if (response.IsSuccessStatusCode)
+                    TempData["Success"] = "Product deleted.";
+                else
+                    TempData["Error"] = "Unable to delete the product.";
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting product {Id}", id);
+                TempData["Error"] = "Unable to delete the product.";
             }
 
             return RedirectToAction(nameof(Products));
         }
 
-        // SERVICES 
+        // SERVICES
 
-        public async Task<IActionResult> Services()
+        public async Task<IActionResult> Services(string? filter = "all")
         {
             var services = new List<Service>();
             try
@@ -211,8 +242,18 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                 _logger.LogError(ex, "Error loading services");
             }
 
-            return View(services);
+            // Apply filter (view also shows counts for all three, so the full list is always passed)
+            var filtered = filter switch
+            {
+                "inactive" => services.Where(s => !s.IsActive).ToList(),
+                "all" => services,
+                _ => services.Where(s => s.IsActive).ToList()
+            };
+
+            ViewData["Filter"] = filter ?? "active";
+            return View(filtered);
         }
+
 
         [HttpGet]
         public IActionResult CreateService() => View("ServiceForm", new Service { IsActive = true });
@@ -228,21 +269,74 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                 var payload = new
                 {
                     name = model.Name,
-                    description = model.Description,
-                    image = model.Image,
+                    description = model.Description ?? "",
+                    image = model.Image ?? "",
                     is_active = model.IsActive
                 };
 
                 var client = _http.CreateClient("NodeApi");
                 var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-                await client.PostAsync("api/services", content);
+                var response = await client.PostAsync("api/services", content);
+                var body = await response.Content.ReadAsStringAsync();
 
+                _logger.LogInformation("CreateService response: {Status} | Body: {Body}", (int)response.StatusCode, body);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Node API create service error: {Error}", body);
+                    ModelState.AddModelError("", "Unable to create the service.");
+                    return View("ServiceForm", model);
+                }
+
+                TempData["Success"] = "Service created.";
                 return RedirectToAction(nameof(Services));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating service");
                 ModelState.AddModelError("", "Unable to create the service.");
+                return View("ServiceForm", model);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditService(int id, Service model)
+        {
+            if (!ModelState.IsValid) { model.Id = id; return View("ServiceForm", model); }
+
+            try
+            {
+                var payload = new
+                {
+                    id = id,
+                    name = model.Name,
+                    description = model.Description ?? "",
+                    image = model.Image ?? "",
+                    is_active = model.IsActive
+                };
+
+                var client = _http.CreateClient("NodeApi");
+                var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                var response = await client.PutAsync($"api/services/{id}", content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errJson = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Node API service update error: {Error}", errJson);
+                    ModelState.AddModelError("", "Unable to update the service.");
+                    model.Id = id;
+                    return View("ServiceForm", model);
+                }
+
+                TempData["Success"] = "Service updated.";
+                return RedirectToAction(nameof(Services));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating service {Id}", id);
+                ModelState.AddModelError("", "Unable to update the service.");
+                model.Id = id;
                 return View("ServiceForm", model);
             }
         }
@@ -272,53 +366,72 @@ namespace Woodlands_Prototype_Insy7315.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditService(int id, Service model)
-        {
-            if (!ModelState.IsValid) { model.Id = id; return View("ServiceForm", model); }
-
-            try
-            {
-                var payload = new
-                {
-                    name = model.Name,
-                    description = model.Description,
-                    image = model.Image,
-                    is_active = model.IsActive
-                };
-
-                var client = _http.CreateClient("NodeApi");
-                var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-                await client.PutAsync($"api/services/{id}", content);
-
-                return RedirectToAction(nameof(Services));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating service {Id}", id);
-                ModelState.AddModelError("", "Unable to update the service.");
-                model.Id = id;
-                return View("ServiceForm", model);
-            }
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteService(int id)
         {
             try
             {
                 var client = _http.CreateClient("NodeApi");
-                await client.DeleteAsync($"api/services/{id}");
+                var response = await client.DeleteAsync($"api/services/{id}");
+                if (response.IsSuccessStatusCode)
+                    TempData["Success"] = "Service deleted.";
+                else
+                    TempData["Error"] = "Unable to delete the service.";
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting service {Id}", id);
+                TempData["Error"] = "Unable to delete the service.";
             }
 
             return RedirectToAction(nameof(Services));
         }
 
-        // HELPERS
+
+        // in ManagementController.cs
+
+        public async Task<IActionResult> ServiceRequests(string? status = "all")
+        {
+            var requests = new List<QuoteRequest>();
+            try
+            {
+                var client = _http.CreateClient("NodeApi");
+                var res = await client.GetAsync("api/quote-requests");
+                if (res.IsSuccessStatusCode)
+                {
+                    var json = await res.Content.ReadAsStringAsync();
+                    requests = JsonSerializer.Deserialize<List<QuoteRequest>>(json, _json) ?? new();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading service requests");
+            }
+
+            // Managers only see their branch
+            if (!User.IsInRole("Admin"))
+            {
+                var branch = User.FindFirst("Branch")?.Value;
+                requests = requests
+                    .Where(r => string.Equals(r.Branch, branch, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            requests = requests.OrderByDescending(r => r.CreatedAt).ToList();
+
+            var filtered = status switch
+            {
+                "pending" => requests.Where(r => r.Status == "Pending").ToList(),
+                "in-progress" => requests.Where(r => r.Status == "In Progress").ToList(),
+                "completed" => requests.Where(r => r.Status == "Completed").ToList(),
+                "cancelled" => requests.Where(r => r.Status == "Cancelled").ToList(),
+                _ => requests
+            };
+
+            ViewData["Filter"] = status ?? "all";
+            return View(filtered);
+        }
+
+        // ==================== HELPERS ====================
 
         private static ProductFormViewModel ToForm(Product product)
         {
@@ -339,7 +452,32 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                 Price = product.Price
             };
         }
+        private static string CreateSlug(string title)
+        {
+            var chars = (title ?? "")
+                .ToLowerInvariant()
+                .Select(c => char.IsLetterOrDigit(c) ? c : '-')
+                .ToArray();
 
+            return string.Join(
+                "-",
+                new string(chars)
+                    .Split('-', StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        private async Task<bool> ProductExists(string id)
+        {
+            try
+            {
+                var client = _http.CreateClient("NodeApi");
+                var res = await client.GetAsync($"api/products/{id}");
+                return res.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
         private static List<string> Lines(string value) =>
             (value ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
     }

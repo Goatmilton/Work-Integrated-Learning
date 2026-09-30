@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
@@ -9,32 +8,28 @@ namespace Woodlands_Prototype_Insy7315.Models
     public class Product
     {
         [Key]
-        [StringLength(100)]
         [JsonPropertyName("id")]
         public string Id { get; set; } = "";
 
         [Required]
-        [StringLength(100)]
         [JsonPropertyName("category")]
         public string Category { get; set; } = "";
 
+
         [Required]
-        [StringLength(150)]
         [JsonPropertyName("title")]
         public string Title { get; set; } = "";
 
-        [StringLength(250)]
         [JsonPropertyName("tagline")]
         public string Tagline { get; set; } = "";
 
-        [StringLength(2000)]
         [JsonPropertyName("description")]
         public string Description { get; set; } = "";
 
-        [StringLength(500)]
         [JsonPropertyName("image")]
         public string Image { get; set; } = "";
 
+  
         [JsonPropertyName("gallery")]
         public List<string> Gallery
         {
@@ -48,6 +43,7 @@ namespace Woodlands_Prototype_Insy7315.Models
             get => ReadList(FeaturesJson);
             set => FeaturesJson = WriteList(value);
         }
+
 
         [JsonIgnore]
         public string GalleryJson { get; set; } = "[]";
@@ -66,15 +62,12 @@ namespace Woodlands_Prototype_Insy7315.Models
             set => FinishesJson = WriteList(value);
         }
 
-        [StringLength(100)]
         [JsonPropertyName("lead_time")]
         public string LeadTime { get; set; } = "";
 
-        [StringLength(50)]
         [JsonPropertyName("tag")]
         public string? Tag { get; set; }
 
-        [StringLength(50)]
         [JsonPropertyName("price")]
         public string? Price { get; set; }
 
@@ -88,6 +81,8 @@ namespace Woodlands_Prototype_Insy7315.Models
             {
                 if (string.IsNullOrWhiteSpace(Price))
                     return "Price on request";
+                return Price;
+
                 return IsFromPrice ? $"From {Price}" : Price;
             }
         }
@@ -96,14 +91,17 @@ namespace Woodlands_Prototype_Insy7315.Models
         {
             if (string.IsNullOrWhiteSpace(json))
                 return new List<string>();
+
             try
             {
+ 
                 return JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
             }
             catch
             {
                 try
                 {
+ 
                     var wrapped = JsonSerializer.Deserialize<string>(json);
                     if (wrapped != null)
                         return JsonSerializer.Deserialize<List<string>>(wrapped) ?? new List<string>();
@@ -121,35 +119,22 @@ namespace Woodlands_Prototype_Insy7315.Models
 
     public class ProductCategory
     {
-        [Key]
-        [StringLength(100)]
         public string Id { get; set; } = "";
-        [StringLength(100)]
         public string Label { get; set; } = "";
-        [StringLength(500)]
         public string Image { get; set; } = "";
         public int Count { get; set; }
-        [StringLength(1000)]
         public string Description { get; set; } = "";
-        [StringLength(100)]
         public string Slug { get; set; } = "";
     }
 
     public class HeroSlide
     {
-        [Key]
         public int Id { get; set; }
-        [StringLength(150)]
         public string Heading { get; set; } = "";
-        [StringLength(100)]
         public string Accent { get; set; } = "";
-        [StringLength(150)]
         public string Sub { get; set; } = "";
-        [StringLength(500)]
         public string Image { get; set; } = "";
-        [StringLength(50)]
         public string Cta { get; set; } = "";
-        [StringLength(500)]
         public string Link { get; set; } = "";
     }
 }

@@ -13,6 +13,7 @@ namespace Woodlands_Prototype_Insy7315.Models
         public string Title { get; set; } = "";
 
 
+        // Everything else is optional
         public bool IsFromPrice { get; set; }
         public string Tagline { get; set; } = "";
         public string Description { get; set; } = "";

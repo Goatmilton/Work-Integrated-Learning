@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
 using Woodlands_Prototype_Insy7315.Models;
+using Woodlands_Prototype_Insy7315.Services;
 
 namespace Woodlands_Prototype_Insy7315.Controllers
 {
@@ -27,7 +28,6 @@ namespace Woodlands_Prototype_Insy7315.Controllers
             {
                 var client = _http.CreateClient("NodeApi");
 
-                // Load services
                 var servicesRes = await client.GetAsync("api/services");
                 if (servicesRes.IsSuccessStatusCode)
                 {
@@ -36,7 +36,6 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                     services = services.Where(s => s.IsActive).ToList();
                 }
 
-                // Load requested product if ID was provided
                 if (!string.IsNullOrWhiteSpace(productId))
                 {
                     var prodRes = await client.GetAsync($"api/products/{productId}");
@@ -74,13 +73,23 @@ namespace Woodlands_Prototype_Insy7315.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(ContactRequest request)
         {
-            // Block admin/manager users from submitting quotes
-            if (User.IsInRole(IdentitySeederRoles.Admin) || User.IsInRole(IdentitySeederRoles.Manager))
+            if (User.IsInRole("Admin") ||
+                User.IsInRole("Manager (Soweto)") ||
+                User.IsInRole("Manager (Roodepoort)") ||
+                User.IsInRole("Manager (Randfontein)"))
             {
                 return Forbid();
             }
 
-            // Reload services (in case of validation failure re-render)
+            if (!request.PrivacyAcknowledged)
+            {
+                ModelState.AddModelError(
+                    nameof(ContactRequest.PrivacyAcknowledged),
+                    "Please read the privacy notice before submitting this form.");
+
+                return View(request);
+            }
+
             var services = new List<Service>();
             try
             {
@@ -113,6 +122,12 @@ namespace Woodlands_Prototype_Insy7315.Controllers
             {
                 return View(request);
             }
+            if (!request.PrivacyAcknowledged)
+            {
+                ModelState.AddModelError(nameof(ContactRequest.PrivacyAcknowledged), "Please read the privacy notice before submitting this form.");
+                return View(request);
+            }
+            
 
             try
             {
@@ -121,13 +136,13 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                 var payload = new
                 {
                     quote_code = quoteCode,
-                    first_name = Services.InputSanitizer.StripHtml(request.FirstName),
-                    last_name = Services.InputSanitizer.StripHtml(request.LastName),
+                    first_name = InputSanitizer.StripHtml(request.FirstName),
+                    last_name = InputSanitizer.StripHtml(request.LastName),
                     email = request.Email,
                     phone = request.Phone,
                     branch = request.Branch,
                     service = request.Service,
-                    message = Services.InputSanitizer.StripHtml(request.Message),
+                    message = InputSanitizer.StripHtml(request.Message),
                     product_id = request.ProductId ?? "",
                     status = "pending"
                 };

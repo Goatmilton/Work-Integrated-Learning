@@ -9,6 +9,6 @@
         public string Branch { get; set; } = "";
         public string Date { get; set; } = "";
         public string Value { get; set; } = "";
-        public string Status { get; set; } = "Pending";
+        public string Status { get; set; } = "";
     }
 }

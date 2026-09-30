@@ -1,5 +1,23 @@
 /* Woodlands Designer Boards — small supplement to Tailwind CDN utilities */
 
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    background-color: #2e6b33; /* brand-700 */
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: background-color 0.15s ease;
+}
+
+    .btn-secondary:hover {
+        background-color: #1d4525;
+    }
+/* brand-800 */
+
 h1, h2, h3 {
     font-family: Georgia, serif;
 }
