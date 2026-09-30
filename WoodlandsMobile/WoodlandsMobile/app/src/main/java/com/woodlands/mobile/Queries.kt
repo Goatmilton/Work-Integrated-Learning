@@ -125,6 +125,19 @@ internal fun LocalDb.deleteUser(id: String) {
     writableDatabase.delete("users", "id=?", arrayOf(id))
 }
 
+internal fun LocalDb.deleteUserData(id: String, email: String) {
+    val db = writableDatabase
+    db.beginTransaction()
+    try {
+        db.delete("quote_requests", "lower(email)=lower(?)", arrayOf(email))
+        db.delete("contact_submissions", "lower(email)=lower(?)", arrayOf(email))
+        db.delete("users", "id=?", arrayOf(id))
+        db.setTransactionSuccessful()
+    } finally {
+        db.endTransaction()
+    }
+}
+
 private fun android.database.Cursor.toQuote(): QuoteRow = QuoteRow(
     getLong(getColumnIndexOrThrow("id")),
     getString(getColumnIndexOrThrow("quote_code")) ?: "",

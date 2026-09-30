@@ -5,6 +5,7 @@ import android.graphics.Typeface
 import android.text.InputType
 import android.view.Gravity
 import android.widget.LinearLayout
+import android.widget.CheckBox
 
 internal fun MainActivity.loginScreen() {
     pageIntro("Login", "Sign in to your Woodlands Designer Boards account.")
@@ -38,13 +39,17 @@ internal fun MainActivity.registerScreen() {
     pageIntro("Create an Account", "Register to save your details and track your quotes.")
     val fullName = field("Full Name", "e.g. Thabo Mokoena")
     val email = field("Email Address", "you@example.com").apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS }
-    val phone = field("Phone Number", "071 234 5678")
+    val phone = field("Phone Number", "071 234 5678", required = false)
     val password = passwordField("Password (min 8 characters)")
     val confirm = passwordField("Confirm Password")
+    val privacy = CheckBox(this).apply { text = "I have read the privacy notice. Account details are stored locally in this prototype."; setTextColor(Color.rgb(26, 26, 26)) }
     listOf(fullName, email, phone, password, confirm).forEach { content.addView(it, marginParams(16, 6, 16, 6)) }
+    content.addView(outlineButton("Read privacy notice", blue).apply { setOnClickListener { showPrivacyNotice() } }, marginParams(16, 6, 16, 4))
+    content.addView(privacy, marginParams(16, 6, 16, 6))
     content.addView(button("Register", red, Color.WHITE).apply {
         setOnClickListener {
             if (fullName.text.isNullOrBlank() || email.text.isNullOrBlank() || password.text.isNullOrBlank()) { toast("Please complete all required fields"); return@setOnClickListener }
+            if (!privacy.isChecked) { toast("Please read and acknowledge the privacy notice"); return@setOnClickListener }
             if (password.text.toString().length < 8) { toast("Password must be at least 8 characters"); return@setOnClickListener }
             if (password.text.toString() != confirm.text.toString()) { toast("Passwords do not match"); return@setOnClickListener }
             val id = db.createUser(fullName.text.toString(), email.text.toString(), phone.text?.toString(), password.text.toString(), Roles.CUSTOMER, null)
@@ -62,6 +67,7 @@ internal fun MainActivity.registerScreen() {
 }
 
 internal fun MainActivity.profileScreen() {
+    val activity = this
     val me = currentUser()
     if (me == null) { showScreen("login"); return }
     pageIntro("My Profile", "View and update your account details.")
@@ -99,6 +105,22 @@ internal fun MainActivity.profileScreen() {
             newPass.setText(""); confirmPass.setText("")
         }
     }, marginParams(16, 6, 16, 24))
+
+    content.addView(outlineButton("Delete my local account and quote data", red).apply {
+        setOnClickListener {
+            android.app.AlertDialog.Builder(activity)
+                .setTitle("Delete local account data?")
+                .setMessage("This removes your account and quote records saved on this device. It cannot delete data held by the website or its service providers. Contact the business by email for those requests.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Delete local data") { _, _ ->
+                    db.deleteUserData(me.id, me.email)
+                    session.clear()
+                    toast("Local account and quote data deleted")
+                    showScreen("home")
+                }
+                .show()
+        }
+    }, marginParams(16, 0, 16, 24))
 }
 
 internal fun MainActivity.settingsScreen() {

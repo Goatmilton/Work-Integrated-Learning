@@ -5,6 +5,7 @@ namespace Woodlands_Prototype_Insy7315.Models
 {
     public class Service
     {
+        [Key]
         [JsonPropertyName("id")]
         public int Id { get; set; }
 
@@ -17,6 +18,7 @@ namespace Woodlands_Prototype_Insy7315.Models
         [JsonPropertyName("description")]
         public string Description { get; set; } = "";
 
+        [StringLength(500)]
         [JsonPropertyName("image")]
         public string Image { get; set; } = "";
 

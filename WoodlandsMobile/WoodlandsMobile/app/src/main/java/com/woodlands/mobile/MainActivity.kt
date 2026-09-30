@@ -176,9 +176,6 @@ class MainActivity : Activity() {
         content.addView(catRow)
         sectionTitle("Featured", "Popular and new products")
         productList(db.loadProducts().filter { it.tag == "Popular" || it.tag == "New" }.take(4))
-        statsStrip()
-        sectionTitle("Client feedback", "Trusted by homeowners, designers and contractors")
-        db.loadTestimonials().take(3).forEach { testimonialCard(it) }
         cta("Need something custom?", "All our products can be tailored to your space.", "Request a Quote") { showScreen("quote") }
         footerNote()
     }
@@ -234,18 +231,30 @@ class MainActivity : Activity() {
         val first = field("First Name", "e.g. Thabo").apply { if (nameParts != null) setText(nameParts.getOrNull(0).orEmpty()) }
         val last = field("Last Name", "e.g. Mokoena").apply { if (nameParts != null) setText(nameParts.getOrNull(1).orEmpty()) }
         val email = field("Email Address", "you@example.com").apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS; if (me != null) setText(me.email) }
-        val phone = field("Phone Number", "071 234 5678").apply { if (me?.phone != null) setText(me.phone) }
+        val phone = field("Phone Number", "071 234 5678", required = false).apply { if (me?.phone != null) setText(me.phone) }
         val branch = spinnerField("Nearest Branch", db.loadBranches().map { it.name })
         val service = spinnerField("Service Required", listOf("Kitchen Units", "TV Stands", "Built-In Cupboards", "Cutting & Edging", "General Enquiry"))
         val msg = field("Project Description", "Describe your project, measurements, finish preferences, etc.", true)
+        val privacy = CheckBox(this).apply { text = "I have read the privacy notice. This prototype saves quote details on this device."; setTextColor(Color.rgb(26, 26, 26)) }
         listOf(first, last, email, phone, branch, service, msg).forEach { content.addView(it, marginParams(16, 6, 16, 6)) }
+        content.addView(outlineButton("Read privacy notice", blue).apply { setOnClickListener { showPrivacyNotice() } }, marginParams(16, 6, 16, 4))
+        content.addView(privacy, marginParams(16, 6, 16, 6))
         content.addView(button("Submit Request", red, Color.WHITE).apply {
             setOnClickListener {
-                if (first.text.isNullOrBlank() || last.text.isNullOrBlank() || email.text.isNullOrBlank() || phone.text.isNullOrBlank() || msg.text.isNullOrBlank()) { toast("Please complete all required fields"); return@setOnClickListener }
+                if (first.text.isNullOrBlank() || last.text.isNullOrBlank() || email.text.isNullOrBlank() || msg.text.isNullOrBlank()) { toast("Please complete all required fields"); return@setOnClickListener }
+                if (!privacy.isChecked) { toast("Please read and acknowledge the privacy notice"); return@setOnClickListener }
                 db.submitQuote(first.text.toString(), last.text.toString(), email.text.toString(), phone.text.toString(), spinnerValue(branch), spinnerValue(service), msg.text.toString(), selected?.id?.toString())
                 selectedProduct = null; confirmation("Quote request received", "Thanks ${first.text}. Your request has been saved locally on this device and will show up under My Quotes.")
             }
         }, marginParams(16, 12, 16, 20))
+    }
+
+    internal fun showPrivacyNotice() {
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Privacy notice")
+            .setMessage("This prototype stores account, quote and contact details in the app's private database on this device. Requests are not sent to the website by this mobile app. Quote and contact forms use your name, email, branch, service and message; phone is optional. To delete your account and quote records on this device, use Profile > Delete my local account and quote data. For access, correction or deletion requests about the website or other systems, email info@woodlandsdb.co.za. That address must be confirmed by the business before launch.")
+            .setPositiveButton("Close", null)
+            .show()
     }
 
     private fun branchesScreen() {
@@ -328,25 +337,20 @@ class MainActivity : Activity() {
     // ---------- about / testimonials / faqs / contact ----------
 
     private fun aboutScreen() {
-        pageIntro("About Woodlands Designer Boards", "Crafting premium custom-built furniture for Gauteng homes, designers, and contractors since 2009.")
+        pageIntro("About Woodlands Designer Boards", "Custom cabinetry for homes, designers and contractors across Gauteng.")
         image(R.drawable.kitchen_12)
-        sectionTitle("Our Story", "Transforming spaces across Gauteng for over 15 years")
+        sectionTitle("Our Story", "")
         para("Woodlands Designer Boards was founded with a single mission: to make high-quality, custom-built wooden furniture and cabinetry accessible to every South African household. Starting from a single workshop in Soweto, we've grown to three branches serving clients across the West Rand and Johannesburg South.")
         para("Every product we build uses authentic PG Bison board materials — chipboard, MDF, melamine, and Supawood. Our team works with you from initial site measurement through final installation.")
-        statsStrip()
         sectionTitle("Why Choose Us", "")
-        listOf("🏆 PG Bison Certified" to "Authorised partner; genuine PG Bison materials.", "🔧 CNC Precision" to "Tolerances of ±0.5mm.", "👥 All Client Types" to "Homeowners, interior designers and contractors.", "📍 3 Gauteng Branches" to "Soweto, Roodepoort and Randfontein.").forEach { (a, b) -> featureCard(a, b) }
+        listOf("🏆 PG Bison materials" to "Board and finish options for custom cabinetry.", "🔧 CNC cutting" to "Precision cutting and edge banding services.", "👥 Project types" to "Options for homes, designers and contractors.", "📍 Gauteng service" to "Soweto, Roodepoort and Randfontein areas.").forEach { (a, b) -> featureCard(a, b) }
         cta("Ready to start?", "Let's build something around your space.", "Contact Us") { showScreen("contact") }
     }
 
     private fun testimonialsScreen() {
-        pageIntro("What Our Clients Say", "Trusted by homeowners, designers and contractors across Gauteng.")
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        listOf("4.9/5" to "Average Rating", "500+" to "Happy Clients", "100%" to "Would Recommend").forEach { (a, b) ->
-            val c = card().apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(dp(8), dp(12), dp(8), dp(12)) }; c.addView(tv(a, 20, red).apply { setTypeface(typeface, Typeface.BOLD); gravity = Gravity.CENTER }); c.addView(tv(b, 10, muted).apply { gravity = Gravity.CENTER }); row.addView(c, LinearLayout.LayoutParams(0, dp(86), 1f).apply { setMargins(dp(5), dp(4), dp(5), dp(4)) })
-        }; content.addView(row)
-        db.loadTestimonials().forEach { testimonialCard(it) }
-        cta("Ready to join our satisfied clients?", "Get a free quote today.", "Request a Free Quote") { showScreen("quote") }
+        pageIntro("Client feedback", "")
+        content.addView(tv("There are no verified client testimonials published yet.", 14, text).apply { setPadding(dp(16), dp(10), dp(16), dp(20)) })
+        cta("Have a project in mind?", "Send a quote request to get started.", "Request a Quote") { showScreen("quote") }
     }
 
     private fun faqScreen() {
@@ -377,14 +381,18 @@ class MainActivity : Activity() {
         val first = field("First Name", "e.g. Thabo").apply { if (nameParts != null) setText(nameParts.getOrNull(0).orEmpty()) }
         val last = field("Last Name", "e.g. Mokoena").apply { if (nameParts != null) setText(nameParts.getOrNull(1).orEmpty()) }
         val email = field("Email Address", "you@example.com").apply { if (me != null) setText(me.email) }
-        val phone = field("Phone Number", "071 234 5678").apply { if (me?.phone != null) setText(me.phone) }
+        val phone = field("Phone Number", "071 234 5678", required = false).apply { if (me?.phone != null) setText(me.phone) }
         val branch = spinnerField("Nearest Branch", db.loadBranches().map { it.name })
         val service = spinnerField("Service Required", listOf("Kitchen Units", "TV Stands", "Built-In Cupboards", "Cutting & Edging", "General Enquiry"))
         val msg = field("Message", "How can we help?", true)
+        val privacy = CheckBox(this).apply { text = "I have read the privacy notice. This prototype saves message details on this device."; setTextColor(Color.rgb(26, 26, 26)) }
         listOf(first, last, email, phone, branch, service, msg).forEach { content.addView(it, marginParams(16, 6, 16, 6)) }
+        content.addView(outlineButton("Read privacy notice", blue).apply { setOnClickListener { showPrivacyNotice() } }, marginParams(16, 6, 16, 4))
+        content.addView(privacy, marginParams(16, 6, 16, 6))
         content.addView(button("Send Message", red, Color.WHITE).apply {
             setOnClickListener {
-                if (first.text.isNullOrBlank() || last.text.isNullOrBlank() || email.text.isNullOrBlank() || phone.text.isNullOrBlank() || msg.text.isNullOrBlank()) { toast("Please complete all required fields"); return@setOnClickListener }
+                if (first.text.isNullOrBlank() || last.text.isNullOrBlank() || email.text.isNullOrBlank() || msg.text.isNullOrBlank()) { toast("Please complete all required fields"); return@setOnClickListener }
+                if (!privacy.isChecked) { toast("Please read and acknowledge the privacy notice"); return@setOnClickListener }
                 db.writableDatabase.execSQL("INSERT INTO contact_submissions(first_name,last_name,email,phone,branch,service,message,created_at) VALUES(?,?,?,?,?,?,?,?)", arrayOf<Any?>(first.text.toString(), last.text.toString(), email.text.toString(), phone.text.toString(), spinnerValue(branch), spinnerValue(service), msg.text.toString(), System.currentTimeMillis()))
                 confirmation("Message saved", "Your message has been saved locally in this prototype.")
             }
@@ -422,7 +430,7 @@ class MainActivity : Activity() {
     internal fun outlineButton(label: String, color: Int): Button = Button(this).apply { text = label; textSize = 12f; setTextColor(color); setAllCaps(false); background = rippleBg(Color.WHITE, color, 10, 40); minHeight = 0; minimumHeight = 0; stateListAnimator = null }
     internal fun tv(s: String, size: Float, color: Int) = TextView(this).apply { text = s; textSize = size; setTextColor(color); includeFontPadding = true }
     internal fun tv(s: String, size: Int, color: Int) = tv(s, size.toFloat(), color)
-    internal fun field(label: String, hint: String, multi: Boolean = false): EditText = EditText(this).apply { this.hint = "$label *"; textSize = 13f; setTextColor(this@MainActivity.text); setHintTextColor(muted); background = bg(Color.WHITE, Color.rgb(205, 212, 222), 8); setPadding(dp(12), dp(9), dp(12), dp(9)); if (multi) { minLines = 4; gravity = Gravity.TOP; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE } else { inputType = InputType.TYPE_CLASS_TEXT } }
+    internal fun field(label: String, hint: String, multi: Boolean = false, required: Boolean = true): EditText = EditText(this).apply { this.hint = if (required) "$label *" else "$label (optional)"; textSize = 13f; setTextColor(this@MainActivity.text); setHintTextColor(muted); background = bg(Color.WHITE, Color.rgb(205, 212, 222), 8); setPadding(dp(12), dp(9), dp(12), dp(9)); if (multi) { minLines = 4; gravity = Gravity.TOP; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE } else { inputType = InputType.TYPE_CLASS_TEXT } }
     internal fun passwordField(label: String): EditText = field(label, label).apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD }
     internal fun spinnerField(label: String, items: List<String>, preselect: String? = null): LinearLayout {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }

@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
 using Woodlands_Prototype_Insy7315.Models;
+using Woodlands_Prototype_Insy7315.Services;
 
 namespace Woodlands_Prototype_Insy7315.Controllers
 {
@@ -11,50 +13,54 @@ namespace Woodlands_Prototype_Insy7315.Controllers
     {
         private readonly IHttpClientFactory _http;
         private readonly ILogger<AdminController> _logger;
+        private readonly IAuditLogService _auditLog;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly JsonSerializerOptions _json = new() { PropertyNameCaseInsensitive = true };
 
-        public AdminController(IHttpClientFactory http, ILogger<AdminController> logger)
+        public AdminController(
+            IHttpClientFactory http,
+            ILogger<AdminController> logger,
+            IAuditLogService auditLog,
+            UserManager<ApplicationUser> userManager)
         {
             _http = http;
             _logger = logger;
+            _auditLog = auditLog;
+            _userManager = userManager;
         }
 
         // ==================== USERS ====================
+        // User accounts, passwords and role membership live in ASP.NET Core
+        // Identity (AspNetUsers/AspNetRoles), managed here via UserManager.
+        // This used to proxy to an external Node/Supabase API for user CRUD;
+        // that dependency has been removed so account management works
+        // end-to-end without it.
 
         public async Task<IActionResult> Users()
         {
+            var users = _userManager.Users.OrderBy(u => u.Email).ToList();
             var rows = new List<AdminUserRowViewModel>();
-            try
-            {
-                var client = _http.CreateClient("NodeApi");
-                var res = await client.GetAsync("api/app-users");
-                if (res.IsSuccessStatusCode)
-                {
-                    var json = await res.Content.ReadAsStringAsync();
-                    var users = JsonSerializer.Deserialize<List<AppUser>>(json, _json) ?? new();
 
-                    rows = users.Select(u => new AdminUserRowViewModel
-                    {
-                        Id = u.Id,
-                        FullName = u.FullName,
-                        Email = u.Email,
-                        PhoneNumber = u.Phone,
-                        Role = string.IsNullOrWhiteSpace(u.Role) ? "Customer" : u.Role,
-                        Branch = u.Branch,
-                        Active = u.Active
-                    }).ToList();
-                }
-            }
-            catch (Exception ex)
+            foreach (var u in users)
             {
-                _logger.LogError(ex, "Error loading users");
-                TempData["AdminError"] = "Unable to load user accounts.";
+                var roles = await _userManager.GetRolesAsync(u);
+                rows.Add(new AdminUserRowViewModel
+                {
+                    Id = u.Id,
+                    FullName = u.FullName,
+                    Email = u.Email ?? "",
+                    PhoneNumber = u.PhoneNumber,
+                    Role = roles.FirstOrDefault() ?? IdentitySeederRoles.Customer,
+                    Branch = u.Branch,
+                    Active = !u.LockoutEnabled || u.LockoutEnd == null || u.LockoutEnd < DateTimeOffset.UtcNow
+                });
             }
+
             return View(rows);
         }
 
         [HttpGet]
-        public IActionResult CreateUser() => View("UserForm", new UserFormViewModel { Role = "Customer", Active = true });
+        public IActionResult CreateUser() => View("UserForm", new UserFormViewModel { Role = IdentitySeederRoles.Customer, Active = true });
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -68,61 +74,47 @@ namespace Woodlands_Prototype_Insy7315.Controllers
 
             if (!ModelState.IsValid) return View("UserForm", model);
 
-            try
+            var existing = await _userManager.FindByEmailAsync(model.Email);
+            if (existing != null)
             {
-                // Register via Node API
-                var registerPayload = new
-                {
-                    fullName = model.FullName,
-                    email = model.Email,
-                    password = model.Password,
-                    phone = model.PhoneNumber ?? ""
-                };
-
-                var client = _http.CreateClient("NodeApi");
-                var content = new StringContent(JsonSerializer.Serialize(registerPayload), Encoding.UTF8, "application/json");
-                var res = await client.PostAsync("api/auth/register", content);
-
-                if (!res.IsSuccessStatusCode)
-                {
-                    var errJson = await res.Content.ReadAsStringAsync();
-                    ModelState.AddModelError("", GetUserFriendlyError(errJson));
-                    return View("UserForm", model);
-                }
-
-                // If role/branch differs from Customer, update the app_users row via a second call
-                if (model.Role != "Customer" || !model.Active || !string.IsNullOrWhiteSpace(model.Branch))
-                {
-                    // Find the newly-created user
-                    var listRes = await client.GetAsync("api/app-users");
-                    if (listRes.IsSuccessStatusCode)
-                    {
-                        var listJson = await listRes.Content.ReadAsStringAsync();
-                        var users = JsonSerializer.Deserialize<List<AppUser>>(listJson, _json) ?? new();
-                        var created = users.FirstOrDefault(u => u.Email.Equals(model.Email, StringComparison.OrdinalIgnoreCase));
-
-                        if (created != null)
-                        {
-                            var updatePayload = new
-                            {
-                                role = model.Role,
-                                branch = model.Branch,
-                                active = model.Active
-                            };
-                            var upContent = new StringContent(JsonSerializer.Serialize(updatePayload), Encoding.UTF8, "application/json");
-                            await client.PutAsync($"api/app-users/{created.Id}", upContent);
-                        }
-                    }
-                }
-
-                return RedirectToAction(nameof(Users));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating user");
-                ModelState.AddModelError("", "The user account could not be created.");
+                ModelState.AddModelError(nameof(model.Email), "An account with this email address already exists.");
                 return View("UserForm", model);
             }
+
+            var user = new ApplicationUser
+            {
+                UserName = model.Email,
+                Email = model.Email,
+                FullName = InputSanitizer.StripHtml(model.FullName) ?? "",
+                PhoneNumber = model.PhoneNumber,
+                Branch = InputSanitizer.StripHtml(model.Branch),
+                EmailConfirmed = true,
+                LockoutEnabled = true,
+                // A disabled account is represented as "locked out forever" -
+                // Identity has no separate Active flag, and this reuses the
+                // same lockout check PasswordSignInAsync already enforces.
+                LockoutEnd = model.Active ? null : DateTimeOffset.MaxValue
+            };
+
+            var createResult = await _userManager.CreateAsync(user, model.Password!);
+            if (!createResult.Succeeded)
+            {
+                foreach (var error in createResult.Errors)
+                    ModelState.AddModelError("", error.Description);
+
+                await _auditLog.LogAsync("AdminCreateUser", success: false, subject: model.Email,
+                    details: string.Join("; ", createResult.Errors.Select(e => e.Description)));
+
+                return View("UserForm", model);
+            }
+
+            await _userManager.AddToRoleAsync(user, model.Role);
+
+            var actingAdmin = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            await _auditLog.LogAsync("AdminCreateUser", success: true, subject: model.Email, userId: actingAdmin,
+                details: $"Role: {model.Role}");
+
+            return RedirectToAction(nameof(Users));
         }
 
         [HttpGet]
@@ -130,33 +122,22 @@ namespace Woodlands_Prototype_Insy7315.Controllers
         {
             if (string.IsNullOrWhiteSpace(id)) return NotFound();
 
-            try
-            {
-                var client = _http.CreateClient("NodeApi");
-                var res = await client.GetAsync("api/app-users");
-                if (!res.IsSuccessStatusCode) return NotFound();
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound();
 
-                var json = await res.Content.ReadAsStringAsync();
-                var users = JsonSerializer.Deserialize<List<AppUser>>(json, _json) ?? new();
-                var user = users.FirstOrDefault(u => u.Id == id);
-                if (user == null) return NotFound();
+            var roles = await _userManager.GetRolesAsync(user);
+            var isActive = !user.LockoutEnabled || user.LockoutEnd == null || user.LockoutEnd < DateTimeOffset.UtcNow;
 
-                return View("UserForm", new UserFormViewModel
-                {
-                    Id = user.Id,
-                    FullName = user.FullName,
-                    Email = user.Email,
-                    PhoneNumber = user.Phone,
-                    Role = string.IsNullOrWhiteSpace(user.Role) ? "Customer" : user.Role,
-                    Branch = user.Branch,
-                    Active = user.Active
-                });
-            }
-            catch (Exception ex)
+            return View("UserForm", new UserFormViewModel
             {
-                _logger.LogError(ex, "Error loading user {Id}", id);
-                return NotFound();
-            }
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email ?? "",
+                PhoneNumber = user.PhoneNumber,
+                Role = roles.FirstOrDefault() ?? IdentitySeederRoles.Customer,
+                Branch = user.Branch,
+                Active = isActive
+            });
         }
 
         [HttpPost]
@@ -168,31 +149,41 @@ namespace Woodlands_Prototype_Insy7315.Controllers
 
             if (!ModelState.IsValid) { model.Id = id; return View("UserForm", model); }
 
-            try
-            {
-                var payload = new
-                {
-                    full_name = model.FullName,
-                    email = model.Email,
-                    phone = model.PhoneNumber ?? "",
-                    role = model.Role,
-                    branch = model.Branch,
-                    active = model.Active
-                };
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound();
 
-                var client = _http.CreateClient("NodeApi");
-                var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-                await client.PutAsync($"api/app-users/{id}", content);
+            user.FullName = InputSanitizer.StripHtml(model.FullName) ?? "";
+            user.PhoneNumber = model.PhoneNumber;
+            user.Branch = InputSanitizer.StripHtml(model.Branch);
+            user.Email = model.Email;
+            user.UserName = model.Email;
+            user.LockoutEnd = model.Active ? null : DateTimeOffset.MaxValue;
 
-                return RedirectToAction(nameof(Users));
-            }
-            catch (Exception ex)
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
             {
-                _logger.LogError(ex, "Error updating user {Id}", id);
-                ModelState.AddModelError("", "Unable to update the user account.");
+                foreach (var error in updateResult.Errors)
+                    ModelState.AddModelError("", error.Description);
+
+                await _auditLog.LogAsync("AdminEditUser", success: false, subject: model.Email,
+                    details: string.Join("; ", updateResult.Errors.Select(e => e.Description)));
+
                 model.Id = id;
                 return View("UserForm", model);
             }
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            if (!currentRoles.Contains(model.Role))
+            {
+                await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                await _userManager.AddToRoleAsync(user, model.Role);
+            }
+
+            var actingAdmin = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            await _auditLog.LogAsync("AdminEditUser", success: true, subject: model.Email, userId: actingAdmin,
+                details: $"Target: {id}, Role: {model.Role}, Active: {model.Active}");
+
+            return RedirectToAction(nameof(Users));
         }
 
         [HttpPost]
@@ -208,14 +199,32 @@ namespace Woodlands_Prototype_Insy7315.Controllers
                 return RedirectToAction(nameof(Users));
             }
 
+            var actingAdmin = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
             try
             {
-                var client = _http.CreateClient("NodeApi");
-                await client.DeleteAsync($"api/app-users/{id}");
+                var user = await _userManager.FindByIdAsync(id);
+                if (user == null)
+                {
+                    TempData["AdminError"] = "That user account could not be found.";
+                    return RedirectToAction(nameof(Users));
+                }
+
+                var deleteResult = await _userManager.DeleteAsync(user);
+                if (!deleteResult.Succeeded)
+                {
+                    TempData["AdminError"] = "Unable to delete the user account.";
+                    await _auditLog.LogAsync("AdminDeleteUser", success: false, subject: user.Email, userId: actingAdmin,
+                        details: string.Join("; ", deleteResult.Errors.Select(e => e.Description)));
+                    return RedirectToAction(nameof(Users));
+                }
+
+                await _auditLog.LogAsync("AdminDeleteUser", success: true, subject: user.Email, userId: actingAdmin);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting user {Id}", id);
+                await _auditLog.LogAsync("AdminDeleteUser", success: false, subject: id, userId: actingAdmin, details: ex.Message);
                 TempData["AdminError"] = "Unable to delete the user account.";
             }
 
@@ -258,12 +267,12 @@ namespace Woodlands_Prototype_Insy7315.Controllers
             {
                 var payload = new
                 {
-                    name = model.Name,
-                    role = model.Role,
-                    location = model.Location,
+                    name = InputSanitizer.StripHtml(model.Name),
+                    role = InputSanitizer.StripHtml(model.Role),
+                    location = InputSanitizer.StripHtml(model.Location),
                     rating = model.Rating,
-                    review = model.Review,
-                    project = model.Project
+                    review = InputSanitizer.StripHtml(model.Review),
+                    project = InputSanitizer.StripHtml(model.Project)
                 };
 
                 var client = _http.CreateClient("NodeApi");
@@ -322,12 +331,12 @@ namespace Woodlands_Prototype_Insy7315.Controllers
             {
                 var payload = new
                 {
-                    name = model.Name,
-                    role = model.Role,
-                    location = model.Location,
+                    name = InputSanitizer.StripHtml(model.Name),
+                    role = InputSanitizer.StripHtml(model.Role),
+                    location = InputSanitizer.StripHtml(model.Location),
                     rating = model.Rating,
-                    review = model.Review,
-                    project = model.Project
+                    review = InputSanitizer.StripHtml(model.Review),
+                    project = InputSanitizer.StripHtml(model.Project)
                 };
 
                 var client = _http.CreateClient("NodeApi");
@@ -395,7 +404,7 @@ namespace Woodlands_Prototype_Insy7315.Controllers
 
             try
             {
-                var payload = new { category = model.Category, question = model.Question, answer = model.Answer };
+                var payload = new { category = InputSanitizer.StripHtml(model.Category), question = InputSanitizer.StripHtml(model.Question), answer = InputSanitizer.StripHtml(model.Answer) };
 
                 var client = _http.CreateClient("NodeApi");
                 var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
@@ -448,7 +457,7 @@ namespace Woodlands_Prototype_Insy7315.Controllers
 
             try
             {
-                var payload = new { category = model.Category, question = model.Question, answer = model.Answer };
+                var payload = new { category = InputSanitizer.StripHtml(model.Category), question = InputSanitizer.StripHtml(model.Question), answer = InputSanitizer.StripHtml(model.Answer) };
 
                 var client = _http.CreateClient("NodeApi");
                 var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
@@ -481,25 +490,6 @@ namespace Woodlands_Prototype_Insy7315.Controllers
             return RedirectToAction(nameof(Faqs));
         }
 
-        private static string GetUserFriendlyError(string errorJson)
-        {
-            try
-            {
-                var err = JsonSerializer.Deserialize<ErrorResponse>(errorJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                var message = (err?.Error ?? "").ToLowerInvariant();
-
-                if (message.Contains("already registered") || message.Contains("already exists"))
-                    return "An account with this email address already exists.";
-                if (message.Contains("password"))
-                    return "The password does not meet the required requirements.";
-                if (message.Contains("email"))
-                    return "Please enter a valid email address.";
-            }
-            catch { }
-            return "The user account could not be created.";
-        }
-
-        private class ErrorResponse { public string? Error { get; set; } }
     }
 
     public class AdminUserRowViewModel
