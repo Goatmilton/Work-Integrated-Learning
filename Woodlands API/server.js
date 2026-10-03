@@ -315,7 +315,15 @@ app.get('/api/homepage-assets', async (req, res) => {
 // QUOTE REQUESTS ROUTES (Uses uuid ID)
 
 app.get('/api/quote-requests', async (req, res) => {
-    const { data, error } = await supabase.from('quote_requests').select('*').order('created_at', { ascending: false });
+    let query = supabase.from('quote_requests').select('*').order('created_at', { ascending: false });
+    if (typeof req.query.email === 'string' && req.query.email.trim()) {
+        const escaped = req.query.email.trim().replace(/[\\%_]/g, '\\$&');
+        query = query.ilike('email', escaped);
+    }
+    if (typeof req.query.branch === 'string' && req.query.branch.trim()) {
+        query = query.eq('branch', req.query.branch.trim());
+    }
+    const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
