@@ -30,6 +30,7 @@ class MainActivity : Activity() {
 
     // form-in-progress state used by the admin/manager management screens
     internal var editUserId: String? = null
+    internal var editBranchId: Int? = null
     internal var editProductId: Int = 0
     internal var editTestimonialId: Int? = null
     internal var editFaqId: Int? = null
@@ -67,10 +68,19 @@ class MainActivity : Activity() {
 
     override fun onDestroy() { super.onDestroy() }
 
+    internal var imagePickCallback: ((Uri) -> Unit)? = null
+
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 7001 && resultCode == RESULT_OK) data?.data?.let { imagePickCallback?.invoke(it) }
+    }
+
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onBackPressed() {
         if (sidebarOpen) { closeSidebar(); return }
         if (selectedProduct != null) { selectedProduct = null; showScreen("gallery"); return }
+        if (currentScreen == "branchForm") { showScreen("branches"); return }
         if (currentScreen in setOf("login", "register", "profile", "settings", "dashboard", "quotes", "users", "userForm", "manageProducts", "productForm", "manageTestimonials", "testimonialForm", "manageFaqs", "faqForm")) { showScreen("more"); return }
         if (currentScreen !in listOf("home", "gallery", "quote", "branches", "more")) { showScreen("home"); return }
         if (currentScreen != "home") showScreen("home") else super.onBackPressed()
@@ -95,7 +105,8 @@ class MainActivity : Activity() {
             "home" -> homeScreen()
             "gallery" -> galleryScreen()
             "quote" -> quoteScreen()
-            "branches" -> branchesScreen()
+            "branches" -> branchListScreen()
+            "branchForm" -> branchFormScreen()
             "more" -> moreScreen()
             "about" -> aboutScreen()
             "testimonials" -> testimonialsScreen()
@@ -106,6 +117,7 @@ class MainActivity : Activity() {
             "register" -> registerScreen()
             "profile" -> profileScreen()
             "settings" -> settingsScreen()
+            "status" -> statusScreen()
             "dashboard" -> dashboardScreen()
             "quotes" -> quotesScreen()
             "users" -> usersScreen()
@@ -120,7 +132,7 @@ class MainActivity : Activity() {
         bottom.visibility = if (screen in listOf("home", "gallery", "quote", "branches", "more")) View.VISIBLE else View.GONE
     }
 
-    // ---------- chrome: header / sidebar trigger / bottom nav ----------
+    //  chrome: header / sidebar trigger / bottom nav 
 
     private fun header(): View {
         val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(6), dp(8), dp(12), dp(8)); setBackgroundColor(Color.WHITE); elevation = 3f }
@@ -135,14 +147,16 @@ class MainActivity : Activity() {
             val avatar = TextView(this).apply { text = initialsOf(me.fullName); textSize = 12f; setTextColor(Color.WHITE); gravity = Gravity.CENTER; setTypeface(typeface, Typeface.BOLD); background = rippleBg(blue, Color.TRANSPARENT, 18, 60); isClickable = true; setOnClickListener { showScreen("profile") } }
             bar.addView(avatar, LinearLayout.LayoutParams(dp(36), dp(36)).apply { setMargins(0, 0, dp(8), 0) })
         }
-        val quote = button("Quote", red, Color.WHITE).apply { setOnClickListener { showScreen("quote") } }
-        bar.addView(quote, LinearLayout.LayoutParams(dp(82), dp(42)))
+        if (me == null || !Roles.isStaff(me.role)) {
+            val quote = button("Quote", red, Color.WHITE).apply { setOnClickListener { showScreen("quote") } }
+            bar.addView(quote, LinearLayout.LayoutParams(dp(82), dp(42)))
+        }
         return bar
     }
 
     private fun bottomNav(): LinearLayout {
         val nav = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(Color.WHITE); elevation = 8f }
-        val items = listOf("⌂" to "Home", "▦" to "Gallery", "✎" to "Quote", "⌖" to "Branches", "☰" to "More")
+        val items = listOf("⌂" to "Home", "▦" to "Gallery", (if (staffUser()) "▤" to "Quotes" else "✎" to "Quote"), "⌖" to "Branches", "☰" to "More")
         items.forEach { (icon, label) ->
             val isActive = active(label)
             val cell = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(0, dp(6), 0, dp(6)) }
@@ -153,49 +167,25 @@ class MainActivity : Activity() {
             cell.addView(pill)
             cell.background = rippleBg(Color.WHITE, Color.TRANSPARENT, 0, 35)
             cell.isClickable = true
-            cell.setOnClickListener { when (label) { "Home" -> showScreen("home"); "Gallery" -> showScreen("gallery"); "Quote" -> showScreen("quote"); "Branches" -> showScreen("branches"); else -> showScreen("more") } }
+            cell.setOnClickListener { when (label) { "Home" -> showScreen("home"); "Gallery" -> showScreen("gallery"); "Quote" -> showScreen("quote"); "Quotes" -> showScreen("quotes"); "Branches" -> showScreen("branches"); else -> showScreen("more") } }
             nav.addView(cell, LinearLayout.LayoutParams(0, dp(60), 1f))
         }
         return nav
     }
-    private fun active(label: String) = when (label) { "Home" -> currentScreen == "home"; "Gallery" -> currentScreen == "gallery" || currentScreen == "product"; "Quote" -> currentScreen == "quote"; "Branches" -> currentScreen == "branches"; else -> currentScreen in moreFamily }
-
-    // ---------- home ----------
+    private fun staffUser() = currentUser()?.let { Roles.isStaff(it.role) } == true
+    private fun active(label: String) = when (label) { "Home" -> currentScreen == "home"; "Gallery" -> currentScreen == "gallery" || currentScreen == "product"; "Quote" -> currentScreen == "quote"; "Quotes" -> currentScreen == "quotes"; "Branches" -> currentScreen == "branches" || currentScreen == "branchForm"; else -> currentScreen in moreFamily && !(staffUser() && currentScreen == "quotes") }
+    //  home 
 
     private fun homeScreen() {
-        hero()
-        sectionTitle("Explore our work", "Custom-built units and precision board services")
-        val cats = listOf("Kitchen Units", "TV Stands", "Built-In Cupboards", "Cutting & Edging")
-        val catImages = listOf(R.drawable.kitchen_12, R.drawable.tv_1, R.drawable.kitchen_6, R.drawable.kitchen_3)
-        val catRow = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        cats.forEachIndexed { i, c ->
-            val cardV = card().apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(8), dp(8), dp(8), dp(8)); setOnClickListener { galleryFilter = c; showScreen("gallery") } }
-            val img = ImageView(this).apply { setImageResource(catImages[i]); scaleType = ImageView.ScaleType.CENTER_CROP }
-            cardV.addView(img, LinearLayout.LayoutParams(dp(94), dp(78)))
-            val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0); gravity = Gravity.CENTER_VERTICAL }
-            box.addView(tv(c, 16, blue).apply { setTypeface(typeface, Typeface.BOLD) })
-            box.addView(tv(when (i) { 0 -> "Custom kitchens crafted in PG Bison melamine"; 1 -> "Wall-mounted and floor-standing entertainment units"; 2 -> "Floor-to-ceiling fitted wardrobes and storage"; else -> "CNC precision cutting and edge banding services" }, 12, muted))
-            cardV.addView(box, LinearLayout.LayoutParams(0, dp(78), 1f)); catRow.addView(cardV, marginParams(12, 6, 12, 6))
-        }
-        content.addView(catRow)
-        sectionTitle("Featured", "Popular and new products")
-        productList(db.loadProducts().filter { it.tag == "Popular" || it.tag == "New" }.take(4))
+        heroCarousel()
+        categoryGrid()
+        featuredStrip()
+        bisonBanner()
+        testimonialStrip()
         cta("Need something custom?", "All our products can be tailored to your space.", "Request a Quote") { showScreen("quote") }
-        footerNote()
+        homeFooter()
     }
-
-    private fun hero() {
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(18), dp(18), dp(18)); setBackgroundColor(blue) }
-        val image = ImageView(this).apply { setImageResource(R.drawable.kitchen_12); scaleType = ImageView.ScaleType.CENTER_CROP }
-        box.addView(image, LinearLayout.LayoutParams(-1, dp(190)))
-        box.addView(tv("BUILT TO LAST.", 27, Color.WHITE).apply { setTypeface(typeface, Typeface.BOLD); setPadding(0, dp(16), 0, 0) })
-        box.addView(tv("Designed to Impress.", 22, tan).apply { setTypeface(typeface, Typeface.BOLD) })
-        box.addView(tv("Premium custom-built kitchen units, TV stands & built-in cupboards. PG Bison certified.", 13, Color.WHITE).apply { setPadding(0, dp(8), 0, dp(14)) })
-        box.addView(button("Get a Free Quote", red, Color.WHITE).apply { setOnClickListener { showScreen("quote") } })
-        content.addView(box)
-    }
-
-    // ---------- gallery / product / quote / branches ----------
+    //  gallery / product / quote / branches 
 
     private fun galleryScreen() {
         pageIntro("Services & Gallery", "Browse the catalogue and filter products by category.")
@@ -277,7 +267,7 @@ class MainActivity : Activity() {
         content.addView(tv("The current prototype intentionally keeps the branch phone number as 011 XXX XXXX, matching the website seed data.", 11, muted).apply { setPadding(dp(16), dp(10), dp(16), dp(20)) })
     }
 
-    // ---------- more (account hub) ----------
+    //  more (account hub) 
 
     private fun moreScreen() {
         pageIntro("More", "Your account and information")
@@ -297,14 +287,14 @@ class MainActivity : Activity() {
             cardV.addView(row)
             content.addView(cardV, marginParams(16, 6, 16, 10))
             if (Roles.isStaff(me.role)) content.addView(button("Dashboard", blue, Color.WHITE).apply { setOnClickListener { showScreen("dashboard") } }, marginParams(16, 6, 16, 6))
-            content.addView(outlineButton("My Quotes", blue).apply { setOnClickListener { showScreen("quotes") } }, marginParams(16, 0, 16, 6))
+            content.addView(outlineButton(if (Roles.isStaff(me.role)) "Quotes" else "My Quotes", blue).apply { setOnClickListener { showScreen("quotes") } }, marginParams(16, 0, 16, 6))
             content.addView(outlineButton("Profile", blue).apply { setOnClickListener { showScreen("profile") } }, marginParams(16, 0, 16, 6))
             content.addView(outlineButton("Settings", blue).apply { setOnClickListener { showScreen("settings") } }, marginParams(16, 0, 16, 6))
             content.addView(outlineButton("Logout", red).apply { setOnClickListener { session.clear(); toast("Signed out"); showScreen("home") } }, marginParams(16, 0, 16, 12))
         }
         sectionTitle("Information", "")
-        listOf("About Us" to "Learn about Woodlands Designer Boards", "Testimonials" to "Read customer feedback", "FAQs" to "Answers about products and services", "Contact Us" to "Send a message or start a quote").forEach { (title, sub) ->
-            val c = card().apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(14), dp(16), dp(14)); setOnClickListener { when (title) { "About Us" -> showScreen("about"); "Testimonials" -> showScreen("testimonials"); "FAQs" -> showScreen("faqs"); else -> showScreen("contact") } } }
+        listOf("About Us" to "Learn about Woodlands Designer Boards", "Testimonials" to "Read customer feedback", "FAQs" to "Answers about products and services", "Contact Us" to "Send a message or start a quote", "Connection Status" to "Check the app and API connection").forEach { (title, sub) ->
+            val c = card().apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(14), dp(16), dp(14)); setOnClickListener { when (title) { "About Us" -> showScreen("about"); "Testimonials" -> showScreen("testimonials"); "FAQs" -> showScreen("faqs"); "Connection Status" -> showScreen("status"); else -> showScreen("contact") } } }
             c.addView(tv(title, 17, blue).apply { setTypeface(typeface, Typeface.BOLD) }); c.addView(tv(sub, 12, muted).apply { setPadding(0, dp(4), 0, 0) }); content.addView(c, marginParams(16, 6, 16, 6))
         }
         footerNote()
@@ -317,7 +307,7 @@ class MainActivity : Activity() {
         showScreen(if (Roles.isStaff(user.role)) "dashboard" else "home")
     }
 
-    // ---------- about / testimonials / faqs / contact ----------
+    //  about / testimonials / faqs / contact 
 
     private fun aboutScreen() {
         pageIntro("About Woodlands Designer Boards", "Custom cabinetry for homes, designers and contractors across Gauteng.")
@@ -382,7 +372,7 @@ class MainActivity : Activity() {
         }, marginParams(16, 12, 16, 20))
     }
 
-    // ---------- shared UI building blocks ----------
+    //  shared UI building blocks 
 
     private fun productList(products: List<Product>) {
         val row = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }

@@ -87,15 +87,15 @@ private fun MainActivity.buildSidebarPanel(width: Int): LinearLayout {
     navItem("ℹ", "About Us", "about")
     navItem("★", "Testimonials", "testimonials")
     navItem("❔", "FAQs", "faqs")
-    navItem("✉", "Contact", "contact")
+    if (me == null || !Roles.isStaff(me.role)) navItem("✉", "Contact", "contact")
     navItem("⌖", "Branches", "branches")
-    navItem("✎", "Request a Quote", "quote")
+    if (me == null || !Roles.isStaff(me.role)) navItem("✎", "Request a Quote", "quote")
 
     links.addView(View(this).apply { setBackgroundColor(Color.rgb(230, 230, 230)) }, LinearLayout.LayoutParams(-1, dp(1)).apply { setMargins(dp(14), dp(10), dp(14), dp(10)) })
 
     if (me != null) {
         if (Roles.isStaff(me.role)) navItem("📊", "Dashboard", "dashboard")
-        navItem("🧾", "My Quotes", "quotes")
+        navItem("🧾", if (Roles.isStaff(me.role)) "Quotes" else "My Quotes", "quotes")
         navItem("👤", "Profile", "profile")
         navItem("⚙", "Settings", "settings")
         val logout = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(14), dp(13), dp(14), dp(13)); isClickable = true; background = rippleBg(Color.WHITE, Color.TRANSPARENT, 10, 40) }
