@@ -8,7 +8,7 @@
         android:id="@+id/api_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="API status" />
+        android:text="Server Connection Status" />
 
     <include
         android:id="@+id/row_api_server"

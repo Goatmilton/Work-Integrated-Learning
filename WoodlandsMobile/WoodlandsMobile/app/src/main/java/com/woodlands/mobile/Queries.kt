@@ -244,7 +244,7 @@ internal fun LocalDb.loadFaqs(): List<Faq> {
 internal fun LocalDb.loadBranches(): List<Branch> {
     val out = mutableListOf<Branch>()
     readableDatabase.query("branches", null, null, null, null, null, "name").use { c ->
-        while (c.moveToNext()) out += Branch(c.intOf("id"), c.str("name"), c.str("region"), c.str("phone"), c.str("hours"), c.str("notes"), c.str("image"))
+        while (c.moveToNext()) out += Branch(c.intOf("id"), c.str("name"), c.str("region"), c.str("phone"), c.str("hours"), c.str("notes"), c.str("image"), c.str("address"))
     }
     return out
 }
@@ -253,6 +253,7 @@ internal fun LocalDb.saveBranch(b: Branch) {
     val isLocalImage = b.image.startsWith("local:")
     val v = ContentValues().apply {
         put("region", b.region)
+        put("address", b.address)
         put("phone", b.phone)
         put("hours", b.hours)
         put("notes", b.notes)
@@ -260,6 +261,7 @@ internal fun LocalDb.saveBranch(b: Branch) {
     }
     val body = JSONObject()
         .put("region", b.region)
+        .put("address", b.address)
         .put("phone", b.phone)
         .put("hours", b.hours)
         .put("notes", b.notes)

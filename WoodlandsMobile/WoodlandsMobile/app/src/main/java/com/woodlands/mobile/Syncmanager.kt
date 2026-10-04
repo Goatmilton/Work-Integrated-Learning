@@ -336,6 +336,7 @@ object SyncManager {
                 put("remote_id", o.optString("id"))
                 put("name", o.str("name") ?: "")
                 put("region", o.str("region") ?: "")
+        if (o.has("address") && !o.isNull("address")) put("address", o.optString("address"))
                 put("phone", o.str("phone") ?: "")
                 put("hours", o.str("hours") ?: "")
                 put("notes", o.str("notes") ?: "")

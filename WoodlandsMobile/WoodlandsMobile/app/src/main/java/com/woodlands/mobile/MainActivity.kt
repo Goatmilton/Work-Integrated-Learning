@@ -15,6 +15,9 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import android.view.WindowInsets
+import android.view.WindowInsetsController
+
 
 class MainActivity : Activity() {
     internal lateinit var db: LocalDb
@@ -28,6 +31,8 @@ class MainActivity : Activity() {
     internal var galleryFilter = "All"
     internal var sidebarOpen = false
 
+    internal var topInset = 0
+    internal var bottomInset = 0
     // form-in-progress state used by the admin/manager management screens
     internal var editUserId: String? = null
     internal var editBranchId: Int? = null
@@ -61,11 +66,34 @@ class MainActivity : Activity() {
         db = LocalDb.shared(this)
         session = Session(this)
         window.statusBarColor = blue
-        pageContainer = FrameLayout(this)
+        pageContainer = FrameLayout(this).apply { setBackgroundColor(Color.WHITE) }
+        pageContainer.setOnApplyWindowInsetsListener { _, insets ->
+            val bars = insets.getInsets(WindowInsets.Type.systemBars())
+            topInset = bars.top
+            bottomInset = bars.bottom
+            if (::root.isInitialized) applyEdgeGaps()
+            insets
+        }
         setContentView(pageContainer)
+        setStatusIcons(dark = true)
+        window.insetsController?.setSystemBarsAppearance(
+            WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+            WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+        )
         showScreen("home")
     }
 
+    /** 15dp boundary between app content and system status and navigation bars. */
+    internal fun applyEdgeGaps() {
+        root.setPadding(0, topInset + dp(15), 0, bottomInset + dp(5))
+    }
+
+    internal fun setStatusIcons(dark: Boolean) {
+        window.insetsController?.setSystemBarsAppearance(
+            if (dark) WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS else 0,
+            WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+        )
+    }
     override fun onDestroy() { super.onDestroy() }
 
     internal var imagePickCallback: ((Uri) -> Unit)? = null
@@ -82,6 +110,8 @@ class MainActivity : Activity() {
         if (selectedProduct != null) { selectedProduct = null; showScreen("gallery"); return }
         if (currentScreen == "branchForm") { showScreen("branches"); return }
         if (currentScreen in setOf("login", "register", "profile", "settings", "dashboard", "quotes", "users", "userForm", "manageProducts", "productForm", "manageTestimonials", "testimonialForm", "manageFaqs", "faqForm")) { showScreen("more"); return }
+        if (currentScreen in LEGAL_SCREENS) { showScreen("legal"); return }
+        if (currentScreen == "legal") { showScreen("more"); return }
         if (currentScreen !in listOf("home", "gallery", "quote", "branches", "more")) { showScreen("home"); return }
         if (currentScreen != "home") showScreen("home") else super.onBackPressed()
     }
@@ -92,7 +122,8 @@ class MainActivity : Activity() {
         if (sidebarOpen) closeSidebarImmediate()
         currentScreen = screen
         if (screen in listOf("home", "gallery", "branches", "more", "about", "testimonials", "faqs", "contact")) selectedProduct = null
-        root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(cream) }
+        root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.WHITE) }
+        applyEdgeGaps()
         pageContainer.removeAllViews()
         pageContainer.addView(root, FrameLayout.LayoutParams(-1, -1))
         root.addView(header())
@@ -111,6 +142,8 @@ class MainActivity : Activity() {
             "about" -> aboutScreen()
             "testimonials" -> testimonialsScreen()
             "faqs" -> faqScreen()
+            "legal" -> legalHubScreen()
+            "privacy", "terms", "refunds", "cookies" -> legalDocScreen(screen)
             "contact" -> contactScreen()
             "product" -> if (selectedProduct != null) productScreen(selectedProduct!!) else showScreen("home")
             "login" -> loginScreen()
@@ -138,9 +171,12 @@ class MainActivity : Activity() {
         val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(6), dp(8), dp(12), dp(8)); setBackgroundColor(Color.WHITE); elevation = 3f }
         val menu = TextView(this).apply { text = "☰"; textSize = 22f; setTextColor(blue); gravity = Gravity.CENTER; background = rippleBg(Color.WHITE, lineColor, 12, 45); isClickable = true; setOnClickListener { openSidebar() } }
         bar.addView(menu, LinearLayout.LayoutParams(dp(42), dp(42)).apply { setMargins(dp(6), 0, 0, 0) })
-        val logo = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; isClickable = true; setOnClickListener { showScreen("home") } }
-        logo.addView(tv("Woodlands", 19, blue).apply { setTypeface(Typeface.SERIF, Typeface.BOLD); gravity = Gravity.CENTER })
-        logo.addView(tv("DESIGNER BOARDS", 9, red).apply { setTypeface(typeface, Typeface.BOLD); letterSpacing = 0.2f; gravity = Gravity.CENTER })
+        val logo = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; isClickable = true; setOnClickListener { showScreen("home") } }
+        logo.addView(ImageView(this).apply { setImageResource(R.drawable.app_logo_transparent); scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(dp(36), dp(36)).apply { setMargins(0, 0, dp(8), 0) })
+        val logoText = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_VERTICAL }
+        logoText.addView(tv("Woodlands", 19, blue).apply { setTypeface(Typeface.SERIF, Typeface.BOLD); gravity = Gravity.CENTER })
+        logoText.addView(tv("DESIGNER BOARDS", 9, red).apply { setTypeface(typeface, Typeface.BOLD); letterSpacing = 0.2f; gravity = Gravity.CENTER })
+        logo.addView(logoText)
         bar.addView(logo, LinearLayout.LayoutParams(0, dp(46), 1f))
         val me = currentUser()
         if (me != null) {
@@ -246,7 +282,7 @@ class MainActivity : Activity() {
     internal fun showPrivacyNotice() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Privacy notice")
-            .setMessage("This prototype stores account, quote and contact details in the app's private database on this device. Requests are not sent to the website by this mobile app. Quote and contact forms use your name, email, branch, service and message; phone is optional. To delete your account and quote records on this device, use Profile > Delete my local account and quote data. For access, correction or deletion requests about the website or other systems, email info@woodlandsdb.co.za. That address must be confirmed by the business before launch.")
+            .setMessage("This prototype stores account, quote and contact details in the app's private database on this device and the shared online database. Requests are sent to the database then shared to the website by this mobile app. Quote and contact forms use your name, email, branch, service and message; phone number is optional. To delete your account and quote records on this device, use Profile > Delete my local account and quote data. For access, correction or deletion requests about the website or other systems, email info@woodlandsdb.co.za. That address must be confirmed by the business before launch.")
             .setPositiveButton("Close", null)
             .show()
     }
@@ -293,8 +329,8 @@ class MainActivity : Activity() {
             content.addView(outlineButton("Logout", red).apply { setOnClickListener { session.clear(); toast("Signed out"); showScreen("home") } }, marginParams(16, 0, 16, 12))
         }
         sectionTitle("Information", "")
-        listOf("About Us" to "Learn about Woodlands Designer Boards", "Testimonials" to "Read customer feedback", "FAQs" to "Answers about products and services", "Contact Us" to "Send a message or start a quote", "Connection Status" to "Check the app and API connection").forEach { (title, sub) ->
-            val c = card().apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(14), dp(16), dp(14)); setOnClickListener { when (title) { "About Us" -> showScreen("about"); "Testimonials" -> showScreen("testimonials"); "FAQs" -> showScreen("faqs"); "Connection Status" -> showScreen("status"); else -> showScreen("contact") } } }
+        listOf("About Us" to "Learn about Woodlands Designer Boards", "Testimonials" to "Read customer feedback", "FAQs" to "Answers about products and services", "Contact Us" to "Send a message or start a quote", "Legal Information" to "Privacy, terms, refunds and cookies", "Connection Status" to "Check the App's status connection").forEach { (title, sub) ->
+            val c = card().apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(14), dp(16), dp(14)); setOnClickListener { when (title) { "About Us" -> showScreen("about"); "Testimonials" -> showScreen("testimonials"); "FAQs" -> showScreen("faqs");"Legal Information" -> showScreen("legal"); "Connection Status" -> showScreen("status"); else -> showScreen("contact") } } }
             c.addView(tv(title, 17, blue).apply { setTypeface(typeface, Typeface.BOLD) }); c.addView(tv(sub, 12, muted).apply { setPadding(0, dp(4), 0, 0) }); content.addView(c, marginParams(16, 6, 16, 6))
         }
         footerNote()
@@ -310,14 +346,22 @@ class MainActivity : Activity() {
     //  about / testimonials / faqs / contact 
 
     private fun aboutScreen() {
-        pageIntro("About Woodlands Designer Boards", "Custom cabinetry for homes, designers and contractors across Gauteng.")
+        pageIntro("About Woodlands Designer Boards", "Explore our custom furniture and cabinetry services for homes, designers, and contractors across Gauteng.")
         image(R.drawable.kitchen_12)
-        sectionTitle("Our Story", "")
-        para("Woodlands Designer Boards was founded with a single mission: to make high-quality, custom-built wooden furniture and cabinetry accessible to every South African household. Starting from a single workshop in Soweto, we've grown to three branches serving clients across the West Rand and Johannesburg South.")
-        para("Every product we build uses authentic PG Bison board materials — chipboard, MDF, melamine, and Supawood. Our team works with you from initial site measurement through final installation.")
+        sectionTitle("Custom Spaces Across Gauteng", "Our Story")
+        para("Woodlands Designer Boards creates custom furniture and cabinetry for residential and trade projects. We help clients plan their spaces, choose suitable materials, and shape a design around their needs.")
+        para("Our range includes board materials and made-to-measure units. Get in touch to discuss your project, material options, measurements, and installation requirements.")
+        featureCard("Materials for your project", "Ask us about available board and finish options.")
         sectionTitle("Why Choose Us", "")
-        listOf("🏆 PG Bison materials" to "Board and finish options for custom cabinetry.", "🔧 CNC cutting" to "Precision cutting and edge banding services.", "👥 Project types" to "Options for homes, designers and contractors.", "📍 Gauteng service" to "Soweto, Roodepoort and Randfontein areas.").forEach { (a, b) -> featureCard(a, b) }
-        cta("Ready to start?", "Let's build something around your space.", "Contact Us") { showScreen("contact") }
+        featureCard("PG Bison Certified", "Authorised partner of SA's leading board manufacturer — every piece uses genuine PG Bison materials.")
+        featureCard("CNC Precision", "Tolerances of ±0.5mm. What you design is exactly what gets built.")
+        featureCard("All Client Types", "Homeowners, interior designers, and building contractors — we serve every scale of project.")
+        featureCard("3 Gauteng Branches", "Soweto, Roodepoort, and Randfontein — always close to your project site.")
+        sectionTitle("Our Three Branches", "")
+        featureCard("⌖ Soweto Branch", "Serving customers in the Soweto area.")
+        featureCard("⌖ Roodepoort Branch", "Serving customers in the Roodepoort area.")
+        featureCard("⌖ Randfontein Branch", "Serving customers in the Randfontein area.")
+        cta("Ready to Work With Us?", "Get a free quote — we'll measure, design, and install everything.", "Get a Free Quote →") { showScreen("quote") }
     }
 
     private fun testimonialsScreen() {

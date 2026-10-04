@@ -107,6 +107,7 @@ internal fun MainActivity.showBranchDialog(b: Branch, mine: Boolean) {
     body.addView(tv("${b.name} Branch", 22, blue).apply { setTypeface(Typeface.SERIF, Typeface.BOLD) })
     if (mine) body.addView(tv("This is the branch you manage.", 12, red).apply { setTypeface(typeface, Typeface.BOLD); setPadding(0, dp(2), 0, 0) })
     detailRow(body, "Region", b.region)
+    detailRow(body, "Address", b.address)
     detailRow(body, "Phone", b.phone)
     detailRow(body, "Opening hours", b.hours)
     detailRow(body, "About", b.notes)
@@ -136,7 +137,7 @@ internal fun MainActivity.showBranchDialog(b: Branch, mine: Boolean) {
         if (digits.count { it.isDigit() } < 9) toast("Phone: ${b.phone}")
         else startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$digits")))
     }
-    maps.setOnClickListener { openMaps("${b.name} Branch, Gauteng") }
+    maps.setOnClickListener { openMaps(b.address.ifBlank { "${b.name} Branch, Gauteng" }) }
     third?.setOnClickListener {
         dialog.dismiss()
         if (admin) { editBranchId = b.id; showScreen("branchForm") } else showScreen("quote")
@@ -153,6 +154,7 @@ internal fun MainActivity.branchFormScreen() {
     pageIntro("Edit ${existing.name} Branch", "Changes are saved on this device and sent to the Woodlands database.")
     val name = field("Branch name", "Branch name").apply { setText(existing.name); isEnabled = false; alpha = 0.6f }
     val region = field("Region", "Region").apply { setText(existing.region) }
+    val address = field("Address", "e.g. 12 Main Rd, Randfontein, Gauteng", required = false).apply { setText(existing.address) }
     val phone = field("Phone", "Phone number").apply { setText(existing.phone) }
     val hours = field("Opening hours", "e.g. Mon-Fri: 8am-5pm").apply { setText(existing.hours) }
     val notes = field("About", "Short description", multi = true, required = false).apply { setText(existing.notes) }
@@ -184,8 +186,8 @@ internal fun MainActivity.branchFormScreen() {
     photoBox.addView(preview, LinearLayout.LayoutParams(dp(180), dp(110)))
     photoBox.addView(photoStatus)
     photoBox.addView(choose, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-    listOf(name, region, phone, hours, notes).forEach { content.addView(it, marginParams(16, 6, 16, 6)) }
-    content.addView(photoBox, marginParams(16, 6, 16, 6))
+    listOf(name, region, address, phone, hours, notes).forEach { content.addView(it, marginParams(16, 6, 16, 6)) }
+    content.addView(tv("This address is what the Open Maps button searches for. Use the full street address for the best result.", 11, muted).apply { setPadding(dp(16), dp(0), dp(16), dp(4)) })
     content.addView(tv("The branch name can't be changed here because quotes and staff accounts refer to it.", 11, muted).apply { setPadding(dp(16), dp(4), dp(16), dp(4)) })
     content.addView(button("Save Changes", blue, Color.WHITE).apply {
         setOnClickListener {
@@ -193,6 +195,7 @@ internal fun MainActivity.branchFormScreen() {
             val newImage = pickedPath?.let { "local:$it" } ?: existing.image
             db.saveBranch(existing.copy(
                 region = region.text.toString().trim(),
+                address = address.text.toString().trim(),
                 phone = phone.text.toString().trim(),
                 hours = hours.text.toString().trim(),
                 notes = notes.text.toString().trim(),

@@ -74,14 +74,14 @@ internal fun MainActivity.connectionsSection() {
 
 internal fun MainActivity.apiStatusSection() {
     val root = layoutInflater.inflate(R.layout.view_api_status, content, false)
-    val server = bindRow(root, R.id.row_api_server, "API server")
+    val server = bindRow(root, R.id.row_api_server, "Connection to Server")
     val rows = listOf(
         bindRow(root, R.id.row_api_products, "Products"),
         bindRow(root, R.id.row_api_branches, "Branches"),
         bindRow(root, R.id.row_api_faqs, "FAQs"),
         bindRow(root, R.id.row_api_testimonials, "Testimonials"),
         bindRow(root, R.id.row_api_quotes, "Quote requests"),
-        bindRow(root, R.id.row_api_users, "Users")
+        bindRow(root, R.id.row_api_users, "Account Users")
     )
     val summary = root.findViewById<TextView>(R.id.api_summary)
     val check = root.findViewById<Button>(R.id.api_check)
@@ -92,7 +92,7 @@ internal fun MainActivity.apiStatusSection() {
         paintStatus(server, null, "", "")
         rows.forEach { paintStatus(it, null, "", "") }
         check.isEnabled = false
-        check.text = "Checking…"
+        check.text = "Checking… please wait"
         SyncManager.checkApi { list ->
             val reachable = list.any { it.reachable }
             val okCount = list.count { it.ok }
@@ -106,7 +106,7 @@ internal fun MainActivity.apiStatusSection() {
             }
             summary.text = msg + " Last checked " + now() + "."
             check.isEnabled = true
-            check.text = "Check API status"
+            check.text = "Check Connection status"
         }
     }
     content.addView(root)
