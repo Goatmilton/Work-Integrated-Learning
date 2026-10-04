@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '18'
       - run: npm ci || npm install
@@ -37,15 +37,18 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: './WoodlandsMobile'
+        working-directory: './WoodlandsMobile/WoodlandsMobile'
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+
       - name: Build with Gradle
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --no-daemon
