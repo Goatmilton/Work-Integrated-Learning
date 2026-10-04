@@ -34,15 +34,17 @@ class MainActivity : Activity() {
     internal var editTestimonialId: Int? = null
     internal var editFaqId: Int? = null
 
-    internal val blue = Color.rgb(0, 71, 171)
-    internal val red = Color.rgb(220, 20, 60)
-    internal val navy = Color.rgb(0, 43, 107)
-    internal val cream = Color.rgb(247, 245, 240)
-    internal val text = Color.rgb(26, 26, 26)
-    internal val muted = Color.rgb(107, 104, 96)
-    internal val green = Color.rgb(21, 128, 61)
-    internal val greenBg = Color.rgb(240, 253, 244)
-    internal val lightBlueBg = Color.rgb(224, 234, 250)
+    internal val blue = Color.rgb(22, 50, 28)
+    internal val red = Color.rgb(128, 80, 37)
+    internal val navy = Color.rgb(29, 69, 37)
+    internal val cream = Color.rgb(251, 250, 247)
+    internal val text = Color.rgb(35, 33, 30)
+    internal val muted = Color.rgb(95, 98, 93)
+    internal val green = Color.rgb(46, 107, 51)
+    internal val greenBg = Color.rgb(238, 244, 236)
+    internal val lightBlueBg = Color.rgb(238, 244, 236)
+    internal val tan = Color.rgb(201, 160, 99)
+    internal val lineColor = Color.rgb(231, 227, 219)
 
     /** Screens that fall "under" the More tab so the bottom nav highlights the right icon. */
     private val moreFamily = setOf(
@@ -121,11 +123,13 @@ class MainActivity : Activity() {
     // ---------- chrome: header / sidebar trigger / bottom nav ----------
 
     private fun header(): View {
-        val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(6), dp(10), dp(12), dp(10)); setBackgroundColor(Color.WHITE); elevation = 3f }
-        val menu = TextView(this).apply { text = "☰"; textSize = 22f; setTextColor(blue); gravity = Gravity.CENTER; background = rippleBg(Color.WHITE, Color.TRANSPARENT, 21, 45); isClickable = true; setOnClickListener { openSidebar() } }
+        val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(6), dp(8), dp(12), dp(8)); setBackgroundColor(Color.WHITE); elevation = 3f }
+        val menu = TextView(this).apply { text = "☰"; textSize = 22f; setTextColor(blue); gravity = Gravity.CENTER; background = rippleBg(Color.WHITE, lineColor, 12, 45); isClickable = true; setOnClickListener { openSidebar() } }
         bar.addView(menu, LinearLayout.LayoutParams(dp(42), dp(42)).apply { setMargins(dp(6), 0, 0, 0) })
-        val logo = tv("WOODLANDS\nDESIGNER BOARDS", 14, blue).apply { gravity = Gravity.CENTER; setTypeface(typeface, Typeface.BOLD); isClickable = true; setOnClickListener { showScreen("home") } }
-        bar.addView(logo, LinearLayout.LayoutParams(0, dp(44), 1f))
+        val logo = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; isClickable = true; setOnClickListener { showScreen("home") } }
+        logo.addView(tv("Woodlands", 19, blue).apply { setTypeface(Typeface.SERIF, Typeface.BOLD); gravity = Gravity.CENTER })
+        logo.addView(tv("DESIGNER BOARDS", 9, red).apply { setTypeface(typeface, Typeface.BOLD); letterSpacing = 0.2f; gravity = Gravity.CENTER })
+        bar.addView(logo, LinearLayout.LayoutParams(0, dp(46), 1f))
         val me = currentUser()
         if (me != null) {
             val avatar = TextView(this).apply { text = initialsOf(me.fullName); textSize = 12f; setTextColor(Color.WHITE); gravity = Gravity.CENTER; setTypeface(typeface, Typeface.BOLD); background = rippleBg(blue, Color.TRANSPARENT, 18, 60); isClickable = true; setOnClickListener { showScreen("profile") } }
@@ -185,7 +189,7 @@ class MainActivity : Activity() {
         val image = ImageView(this).apply { setImageResource(R.drawable.kitchen_12); scaleType = ImageView.ScaleType.CENTER_CROP }
         box.addView(image, LinearLayout.LayoutParams(-1, dp(190)))
         box.addView(tv("BUILT TO LAST.", 27, Color.WHITE).apply { setTypeface(typeface, Typeface.BOLD); setPadding(0, dp(16), 0, 0) })
-        box.addView(tv("Designed to Impress.", 22, red).apply { setTypeface(typeface, Typeface.BOLD) })
+        box.addView(tv("Designed to Impress.", 22, tan).apply { setTypeface(typeface, Typeface.BOLD) })
         box.addView(tv("Premium custom-built kitchen units, TV stands & built-in cupboards. PG Bison certified.", 13, Color.WHITE).apply { setPadding(0, dp(8), 0, dp(14)) })
         box.addView(button("Get a Free Quote", red, Color.WHITE).apply { setOnClickListener { showScreen("quote") } })
         content.addView(box)
@@ -392,32 +396,33 @@ class MainActivity : Activity() {
     internal fun testimonialCard(t: Testimonial) { val c = card().apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), dp(14), dp(14), dp(14)) }; c.addView(tv("★★★★★".replaceRange(t.rating, 5, ""), 16, red)); c.addView(tv("\"${t.review}\"", 13, muted).apply { setPadding(0, dp(7), 0, dp(9)) }); c.addView(tv(t.name, 13, blue).apply { setTypeface(typeface, Typeface.BOLD) }); c.addView(tv("${t.role} · ${t.location}", 11, muted)); c.addView(chip(t.project)); content.addView(c, marginParams(12, 5, 12, 5)) }
     internal fun featureCard(title: String, desc: String) { val c = card().apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), dp(14), dp(14), dp(14)) }; c.addView(tv(title, 15, blue).apply { setTypeface(typeface, Typeface.BOLD) }); c.addView(tv(desc, 12, muted).apply { setPadding(0, dp(4), 0, 0) }); content.addView(c, marginParams(12, 5, 12, 5)) }
     internal fun statsStrip() { val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(8), dp(10), dp(8), dp(10)) }; listOf("15+" to "Years", "500+" to "Projects", "3" to "Branches", "100%" to "PG Bison").forEach { (a, b) -> val c = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER }; c.addView(tv(a, 20, red).apply { setTypeface(typeface, Typeface.BOLD); gravity = Gravity.CENTER }); c.addView(tv(b, 10, muted).apply { gravity = Gravity.CENTER }); row.addView(c, LinearLayout.LayoutParams(0, dp(70), 1f)) }; content.addView(row) }
-    internal fun sectionTitle(title: String, sub: String) { val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(18), dp(16), dp(8)) }; box.addView(tv(title, 20, blue).apply { setTypeface(typeface, Typeface.BOLD) }); if (sub.isNotBlank()) box.addView(tv(sub, 12, muted).apply { setPadding(0, dp(3), 0, 0) }); content.addView(box) }
-    internal fun pageIntro(title: String, sub: String) { val b = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(18), dp(16), dp(18)); setBackgroundColor(blue) }; b.addView(tv(title, 25, Color.WHITE).apply { setTypeface(typeface, Typeface.BOLD) }); b.addView(tv(sub, 12, Color.WHITE).apply { setPadding(0, dp(5), 0, 0) }); content.addView(b) }
+    internal fun sectionTitle(title: String, sub: String) { val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(22), dp(16), dp(8)) }; box.addView(tv(title, 22, blue).apply { setTypeface(Typeface.SERIF, Typeface.BOLD) }); if (sub.isNotBlank()) box.addView(tv(sub, 12, muted).apply { setPadding(0, dp(3), 0, 0) }); content.addView(box) }
+    internal fun pageIntro(title: String, sub: String) { val b = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(22), dp(16), dp(20)); setBackgroundColor(blue) }; b.addView(tv(title, 26, Color.WHITE).apply { setTypeface(Typeface.SERIF, Typeface.BOLD) }); if (sub.isNotBlank()) b.addView(tv(sub, 12, Color.rgb(224, 231, 223)).apply { setPadding(0, dp(5), 0, 0) }); content.addView(b); content.addView(View(this).apply { setBackgroundColor(tan) }, LinearLayout.LayoutParams(-1, dp(3))) }
     internal fun para(s: String) { content.addView(tv(s, 13, muted).apply { setPadding(dp(16), dp(4), dp(16), dp(7)) }) }
     internal fun bullet(s: String) { content.addView(tv("✓  $s", 13, muted).apply { setPadding(dp(20), dp(4), dp(16), dp(4)) }) }
     internal fun infoRow(a: String, b: String) { val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(16), dp(4), dp(16), dp(4)) }; row.addView(tv(a, 12, muted), LinearLayout.LayoutParams(0, dp(28), 1f)); row.addView(tv(b, 13, blue).apply { setTypeface(typeface, Typeface.BOLD); gravity = Gravity.END }, LinearLayout.LayoutParams(0, dp(28), 1f)); content.addView(row) }
-    internal fun cta(title: String, sub: String, label: String, onClick: () -> Unit) { val c = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(18), dp(18), dp(18)); setBackgroundColor(blue) }; c.addView(tv(title, 19, Color.WHITE).apply { setTypeface(typeface, Typeface.BOLD); gravity = Gravity.CENTER }); c.addView(tv(sub, 12, Color.WHITE).apply { gravity = Gravity.CENTER; setPadding(0, dp(4), 0, dp(10)) }); c.addView(button(label, red, Color.WHITE).apply { setOnClickListener { onClick() } }); content.addView(c, marginParams(12, 16, 12, 16)) }
+    internal fun cta(title: String, sub: String, label: String, onClick: () -> Unit) { val c = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(22), dp(20), dp(20)); background = bg(blue, Color.TRANSPARENT, 16) }; c.addView(tv(title, 20, Color.WHITE).apply { setTypeface(Typeface.SERIF, Typeface.BOLD); gravity = Gravity.CENTER }); c.addView(tv(sub, 12, Color.rgb(224, 231, 223)).apply { gravity = Gravity.CENTER; setPadding(0, dp(4), 0, dp(12)) }); c.addView(button(label, tan, blue).apply { setOnClickListener { onClick() } }); content.addView(c, marginParams(12, 16, 12, 16)) }
     internal fun footerNote() { content.addView(tv("WOODLANDS DESIGNER BOARDS\nPremium custom-built units using PG Bison materials.\nSoweto · Roodepoort · Randfontein", 11, muted).apply { gravity = Gravity.CENTER; setPadding(dp(16), dp(16), dp(16), dp(24)) }) }
     internal fun image(res: Int) { content.addView(ImageView(this).apply { setImageResource(res); scaleType = ImageView.ScaleType.CENTER_CROP }, sizeMarginParams(-1, dp(180), 16, 10, 16, 10)) }
 
     internal fun horizontalChips(items: List<String>, selected: String, onPick: (String) -> Unit): HorizontalScrollView { val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(12), dp(5), dp(12), dp(8)) }; items.forEach { i -> row.addView(chip(i, i == selected).apply { setOnClickListener { onPick(i) } }, marginParams(0, 0, 7, 0)) }; return HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(row) } }
     internal fun chip(label: String, selected: Boolean = true): TextView = tv(label, 11, if (selected) Color.WHITE else blue).apply { setPadding(dp(12), dp(7), dp(12), dp(7)); background = rippleBg(if (selected) blue else Color.WHITE, if (selected) blue else Color.LTGRAY, 18, if (selected) 70 else 35) }
     internal fun chip(label: String): TextView = chip(label, false)
-    internal fun card(): LinearLayout = LinearLayout(this).apply { background = rippleBg(Color.WHITE, Color.rgb(225, 230, 238), 12, 35); elevation = 2f }
-    internal fun button(label: String, bgColor: Int, fg: Int): Button = Button(this).apply { text = label; textSize = 12f; setTextColor(fg); setAllCaps(false); background = rippleBg(bgColor, bgColor, 10, 100); minHeight = 0; minimumHeight = 0; stateListAnimator = null }
-    internal fun outlineButton(label: String, color: Int): Button = Button(this).apply { text = label; textSize = 12f; setTextColor(color); setAllCaps(false); background = rippleBg(Color.WHITE, color, 10, 40); minHeight = 0; minimumHeight = 0; stateListAnimator = null }
+    internal fun card(): LinearLayout = LinearLayout(this).apply { background = rippleBg(Color.WHITE, lineColor, 16, 30); elevation = 3f }
+    internal fun button(label: String, bgColor: Int, fg: Int): Button = Button(this).apply { text = label; textSize = 13f; setTextColor(fg); setAllCaps(false); setTypeface(typeface, Typeface.BOLD); background = rippleBg(bgColor, bgColor, 10, 100); minHeight = dp(44); minimumHeight = dp(44); stateListAnimator = null }
+    internal fun outlineButton(label: String, color: Int): Button = Button(this).apply { text = label; textSize = 13f; setTextColor(color); setAllCaps(false); setTypeface(typeface, Typeface.BOLD); background = rippleBg(Color.WHITE, color, 10, 40); minHeight = dp(44); minimumHeight = dp(44); stateListAnimator = null }
     internal fun tv(s: String, size: Float, color: Int) = TextView(this).apply { text = s; textSize = size; setTextColor(color); includeFontPadding = true }
     internal fun tv(s: String, size: Int, color: Int) = tv(s, size.toFloat(), color)
-    internal fun field(label: String, hint: String, multi: Boolean = false, required: Boolean = true): EditText = EditText(this).apply { this.hint = if (required) "$label *" else "$label (optional)"; textSize = 13f; setTextColor(this@MainActivity.text); setHintTextColor(muted); background = bg(Color.WHITE, Color.rgb(205, 212, 222), 8); setPadding(dp(12), dp(9), dp(12), dp(9)); if (multi) { minLines = 4; gravity = Gravity.TOP; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE } else { inputType = InputType.TYPE_CLASS_TEXT } }
+    internal fun field(label: String, hint: String, multi: Boolean = false, required: Boolean = true): EditText = EditText(this).apply { this.hint = if (required) "$label *" else "$label (optional)"; textSize = 14f; setTextColor(this@MainActivity.text); setHintTextColor(muted); background = bg(Color.WHITE, Color.rgb(201, 201, 193), 10); setPadding(dp(12), dp(11), dp(12), dp(11)); if (multi) { minLines = 4; gravity = Gravity.TOP; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE } else { inputType = InputType.TYPE_CLASS_TEXT } }
     internal fun passwordField(label: String): EditText = field(label, label).apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD }
     internal fun spinnerField(label: String, items: List<String>, preselect: String? = null): LinearLayout {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        box.addView(tv("$label *", 11, blue).apply { setPadding(dp(2), 0, dp(2), dp(4)) })
-        val spinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, items); tag = "spinner:$label"; background = bg(Color.WHITE, Color.rgb(205, 212, 222), 8); if (preselect != null) { val idx = items.indexOf(preselect); if (idx >= 0) setSelection(idx) } }
+        box.addView(tv("$label *", 11, text).apply { setPadding(dp(2), 0, dp(2), dp(4)) })
+        val spinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, items); tag = "spinner:$label"; background = bg(Color.WHITE, Color.rgb(201, 201, 193), 10); if (preselect != null) { val idx = items.indexOf(preselect); if (idx >= 0) setSelection(idx) } }
         box.addView(spinner, LinearLayout.LayoutParams(-1, dp(48)))
         return box
     }
+
     internal fun spinnerValue(container: ViewGroup): String { val s = container.getChildAt(1) as Spinner; return s.selectedItem?.toString().orEmpty() }
     internal fun confirmation(title: String, msg: String) { content.removeAllViews(); pageIntro(title, msg); content.addView(button("Back to Home", red, Color.WHITE).apply { setOnClickListener { showScreen("home") } }, marginParams(16, 20, 16, 10)); content.addView(button("Browse Gallery", blue, Color.WHITE).apply { setOnClickListener { showScreen("gallery") } }, marginParams(16, 6, 16, 10)); bottom.visibility = View.GONE }
     internal fun toast(s: String) { Toast.makeText(this, s, Toast.LENGTH_SHORT).show() }

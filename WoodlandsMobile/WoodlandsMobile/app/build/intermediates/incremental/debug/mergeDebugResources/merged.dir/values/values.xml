@@ -8,11 +8,11 @@
     <color name="notification_action_color_filter">#ffffffff</color>
     <color name="notification_icon_bg_color">#ff9e9e9e</color>
     <color name="white">#FFFFFF</color>
-    <color name="wood_blue">#0047AB</color>
-    <color name="wood_cream">#F7F5F0</color>
-    <color name="wood_muted">#6B6860</color>
-    <color name="wood_red">#DC143C</color>
-    <color name="wood_text">#1A1A1A</color>
+    <color name="wood_blue">#16321C</color>
+    <color name="wood_cream">#FBFAF7</color>
+    <color name="wood_muted">#5F625D</color>
+    <color name="wood_red">#805025</color>
+    <color name="wood_text">#23211E</color>
     <dimen name="compat_button_inset_horizontal_material">4dp</dimen>
     <dimen name="compat_button_inset_vertical_material">6dp</dimen>
     <dimen name="compat_button_padding_horizontal_material">8dp</dimen>
@@ -229,7 +229,13 @@
         <item name="android:textColor">?android:attr/textColorSecondary</item>
     </style>
     <style name="TextAppearance.Compat.Notification.Title" parent="@android:style/TextAppearance.StatusBar.EventContent.Title"/>
-    <style name="Theme.Woodlands" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:fontFamily">sans</item><item name="android:windowLightStatusBar">false</item><item name="android:statusBarColor">#0047AB</item><item name="android:navigationBarColor">#FFFFFF</item><item name="android:colorAccent">#0047AB</item></style>
+    <style name="Theme.Woodlands" parent="android:style/Theme.Material.Light.NoActionBar">
+    <item name="android:fontFamily">sans</item>
+    <item name="android:windowLightStatusBar">false</item>
+    <item name="android:statusBarColor">#16321C</item>
+    <item name="android:navigationBarColor">#FFFFFF</item>
+    <item name="android:colorAccent">#2E6B33</item>
+</style>
     <style name="Widget.Compat.NotificationActionContainer" parent=""/>
     <style name="Widget.Compat.NotificationActionText" parent=""/>
     <declare-styleable name="Capability">

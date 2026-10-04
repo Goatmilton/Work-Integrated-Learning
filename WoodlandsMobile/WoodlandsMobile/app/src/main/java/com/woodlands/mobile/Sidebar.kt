@@ -61,11 +61,11 @@ private fun MainActivity.buildSidebarPanel(width: Int): LinearLayout {
     closeRow.addView(TextView(this).apply { text = "✕"; textSize = 16f; setTextColor(Color.WHITE); gravity = Gravity.CENTER; background = rippleBg(blue, Color.TRANSPARENT, 16, 60); isClickable = true; setOnClickListener { closeSidebar() } }, LinearLayout.LayoutParams(dp(32), dp(32)))
     headerBox.addView(closeRow)
     headerBox.addView(tv("WOODLANDS", 18, Color.WHITE).apply { setTypeface(typeface, Typeface.BOLD); setPadding(0, dp(6), 0, 0) })
-    headerBox.addView(tv("DESIGNER BOARDS", 12, Color.rgb(200, 215, 240)))
+    headerBox.addView(tv("DESIGNER BOARDS", 12, Color.rgb(205, 218, 203)))
     val me = currentUser()
     if (me != null) {
         headerBox.addView(tv(me.fullName, 13, Color.WHITE).apply { setPadding(0, dp(12), 0, 0); setTypeface(typeface, Typeface.BOLD) })
-        headerBox.addView(tv(Roles.label(me.role), 11, Color.rgb(200, 215, 240)))
+        headerBox.addView(tv(Roles.label(me.role), 11, Color.rgb(205, 218, 203)))
     }
     panel.addView(headerBox)
 
