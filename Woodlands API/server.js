@@ -157,8 +157,19 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.get('/api/products/:id', async (req, res) => {
-    const { data, error } = await supabase.from('products').select('*').eq('id', req.params.id).single();
-    if (error) return res.status(500).json({ error: error.message });
+    const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
+
+    if (error) {
+        if (error.code === 'PGRST116') {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        return res.status(500).json({ error: error.message });
+    }
 
     const cleaned = {
         ...data,
@@ -198,8 +209,32 @@ app.get('/api/branches', async (req, res) => {
 });
 
 app.get('/api/branches/:id', async (req, res) => {
-    const { data, error } = await supabase.from('branches').select('*').eq('id', req.params.id).single();
-    if (error) return res.status(500).json({ error: error.message });
+    const id = req.params.id;
+
+    if (!/^\d+$/.test(id)) {
+        return res.status(400).json({
+            error: 'Branch ID must be a valid number'
+        });
+    }
+
+    const { data, error } = await supabase
+        .from('branches')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        if (error.code === 'PGRST116') {
+            return res.status(404).json({
+                error: 'Branch not found'
+            });
+        }
+
+        return res.status(500).json({
+            error: error.message
+        });
+    }
+
     res.json(data);
 });
 
@@ -353,6 +388,11 @@ function safeParse(value) {
 
 // Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Node API running on http://localhost:${PORT}`);
-});
+
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Node API running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
