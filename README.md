@@ -1,144 +1,103 @@
+# Woodlands Designer Boards – Mobile Application
 
-<br><br>
+This is a native Android Studio project created from the current Woodlands Designer Boards ASP.NET Core MVC prototype and the mobile wireframes in `TASK 1 (1).docx`.
 
+## Current architecture
 
-## Branches
+- **Android app:** Kotlin, native Android Views, local SQLite database.
+- **API:** the mobile app now talks to the Woodlands API. It reads products, branches, FAQs, testimonials, users and quotes from the API and sends new quotes, contact messages and changes back to it.
+- **Local database as a cache:** the local SQLite database stores a copy of the data on the phone, so the app still opens and shows content when there is no internet.
+- **Offline changes:** anything created or edited while offline (for example a quote request) is saved in a waiting list on the phone and uploaded automatically once the connection is back.
+- **Server address:** the app tries the hosted API first. If that can't be reached, it tries a local API on the emulator (`http://10.0.2.2:5000`). Both addresses are set in `Apiclient.kt`.
+- **Website:** the original ASP.NET Core MVC website remains unchanged. The website and the app now share the same data through the API.
+- **Future-ready:** the screens only talk to the local database layer and the sync layer, so the API or database behind them can be swapped later without redesigning the screens.
 
-### 1. main
+## Mobile functions included
 
-This is the production-ready branch. It contains code that is fully tested and deployed to the live environment. Only merge into this branch when a release is ready. Never commit directly to this branch.
+- Home screen with a sliding hero banner, browse-by-category cards, featured products, the PG Bison partner banner and a testimonials strip.
+- Product/service gallery with category filtering.
+- Product detail pages with features, finishes, pricing and lead time.
+- Product-to-quote flow, with a quote request form and confirmation.
+- Branch locator with Maps intent. Admins can add and edit branches, including a branch photo.
+- About Us, Testimonials, FAQs (category filters, expandable answers), Contact form.
+- Legal Information: Privacy Notice, Terms of Service, Refunds and Cookies, matching the website pages.
+- Connection Status screen (in the More tab) that shows whether the app can reach the Woodlands server and database, which services are online, and how many changes are still waiting to upload.
+- Persistent bottom navigation: Home, Gallery, Quote, Branches, More. Staff accounts see Quotes in place of Quote.
+- A genuine slide-in sidebar (opened from the header's ☰ button) with site navigation and
+  account actions, separate from the More tab - matching the website's mobile hamburger menu.
+- Every tappable element (buttons, cards, chips, nav items) has a ripple/darken touch reaction,
+  and the active bottom-nav tab is highlighted.
+- **Accounts, roles and permissions**, mirroring the website's ASP.NET Core Identity setup:
+  - Register / Login / Logout. Login and registration check with the server, so an internet connection is needed for these. New accounts are created as Customers. The same seeded prototype accounts as the website are available (see `seeded accounts.md`):
+    `admin@woodlandsdb.co.za` / `admin123`, `soweto@woodlandsdb.co.za` / `manager123`,
+    `roodepoort@woodlandsdb.co.za` / `manager123`, `randfontein@woodlandsdb.co.za` / `manager123`,
+    `customer@example.com` / `customer123`.
+  - Profile screen (view role/branch, edit name/phone) and a Settings screen
+    that mirrors the website's Dashboard ▸ Settings "My Account"/"Security" panels. Changing a password is not available in the app yet.
+  - Role-aware Dashboard: Admin sees totals, per-branch summaries and links to manage Users,
+    Products, Testimonials and FAQs; Branch Managers see their branch's pending/in-progress/
+    completed counts; Customers don't get a dashboard, just My Quotes.
+  - Quotes screen: Admins see every quote, Managers see their branch's quotes (with status
+    controls: Pending/In Progress/Completed/Cancelled), Customers see only their own quotes
+    (read-only) - the same visibility rules as `DashboardController` on the website.
+  - Full CRUD management screens for Products (Admin + Managers) and, Admin-only, Users,
+    Testimonials and FAQs - the same permission split as `ManagementController`/`AdminController`.
+- Content comes from the API and is saved on the phone, so the catalogue, services, FAQs, testimonials, branches and quotes match what is on the website.
 
-### 2. develop
+## Open in Android Studio
 
-This is the integration branch. All feature branches merge into this branch first. It contains the latest development changes and is used for testing before release. This is where you verify that everything works together.
+1. Open the `WoodlandsMobile` folder in Android Studio.
+2. Allow Android Studio to sync Gradle and install any requested Android SDK components.
+3. Use an Android emulator or a physical Android device running Android 15 (API 35) or newer.
+4. Run the `app` configuration.
 
-### 3. release
+The app needs an internet connection the first time it opens, so it can download the catalogue. After that it can be used offline.
 
-This is the release preparation branch. Create this when you are preparing for a submission or deployment. Use it for final testing and bug fixes before merging into main. Delete it after merging into main and back into develop.
+The generated `build/`, `.gradle/` and `.idea/` folders are not needed to open the project and can be left out when sharing it.
 
-### 4. hotfix
+## Important prototype behaviour
 
-This is for emergency fixes to production. Create this only when there is a critical bug in main that needs immediate fixing. Merge back into both main and develop after fixing.
+Quote and contact submissions are sent to the Woodlands API, so staff on the website and in the app can see them. If the phone is offline, the submission is kept on the phone and sent later, and the Connection Status screen shows how many changes are still waiting.
 
-### 5. staging
+Signing in, registering and the first download of data all need a connection. Browsing content that has already been downloaded works offline.
 
-This is the staging environment branch. It mirrors the production environment for final testing before going live. Deploy to Azure Staging from this branch.
+The source website contains several Unsplash image URLs. To keep this Android prototype usable without requiring a network image service, the app uses the supplied local Woodlands product photographs as packaged fallback imagery for those catalogue entries. Images that come from the API are downloaded once and kept on the phone.
 
+The app allows plain `http` traffic so it can reach the local API on the emulator. This should be switched off before a real release.
 
-<br><br>
+## Where to edit the design
 
+The code is split by concern so no single file gets unwieldy:
 
-# WoodLink Database
+- `MainActivity.kt` - app chrome (header, bottom nav), screen switching, the gallery, product, quote, More and contact screens, and every
+  shared UI helper (`button`, `card`, `chip`, `field`, colours, ripple/touch-reaction backgrounds).
+- `Homescreens.kt` - the home screen sections (hero banner, categories, featured products, PG Bison banner, testimonials strip, footer).
+- `Infoscreens.kt` - About Us, Testimonials, FAQs and the Legal Information screens.
+- `BranchScreens.kt` - branch list, branch details and the admin branch form.
+- `ConnectionsCard.kt` - the Connection Status screen.
+- `Sidebar.kt` - the slide-in navigation drawer opened from the header's ☰ button.
+- `AuthScreens.kt` - Login, Register, Profile, Settings.
+- `AdminScreens.kt` - Dashboard, Quotes, and the Users/Products/Testimonials/FAQs management
+  screens, gated by role.
+- `Apiclient.kt` - sends requests to the API (hosted first, then local) and reports success, failure or offline.
+- `Syncmanager.kt` - downloads data from the API, uploads waiting changes, handles login/register and the connection checks.
+- `Woodlandsapp.kt` - starts the sync when the app opens and whenever the network comes back.
+- `ImageLoader.kt` - downloads and caches images into the database.
+- `LocalDb.kt` - SQLite tables for the on-phone copy of the data and the waiting list of changes.
+- `Queries.kt` - all read/write helpers against `LocalDb`, used by every screen file.
+- `Models.kt` - data classes plus the `Roles` object mirroring `IdentitySeederRoles` on the website.
+- `Session.kt` - the signed-in-user session. `Security.kt` is an older local password helper and is not used for login any more.
 
-This section is on the WoodLink database, this database runs on Supabase - PostgreSQL. It is used by the website, the Node.js API and the Android app.
+Colours, typography and layout constants are intentionally straightforward so the design can be changed quickly.
 
-## Supabase Project Details (Database)
+The packaged product images are in:
 
-- **Supabase Project:** INSY7315 Project (using production branch, free plan)
-- **Region:** West EU (Ireland), `eu-west-1`
-- **Project ID:** `hgpwxbmkkerbobtvnjx`
+`app/src/main/res/drawable-nodpi/`
 
-Project overview <img width="1919" height="988" alt="image" src="https://github.com/user-attachments/assets/721429de-7590-455c-9184-0b801ea609cf" />
+## Moving to a production setup
 
+The app already follows this path:
 
-<br>
-## **Member Access:**
-  - Andile Nkonyane - ST10474534
-  - Kennedy II Mwashusha - ST10197888
-  - Nairon Cossa - ST10255547
-  - Rico Baloi - ST10441543
-  - Simphiwe Mathenjwa - ST10258505
+`Android UI -> Local database and sync -> REST API -> ASP.NET Core services -> EF Core -> database`
 
-<br>
-
-
-## Database
-
-- PostgreSQL 17.6.1.166, Auth 2.197.0, PostgREST 14.5
-- Supabase turns the tables into a REST API automatically (the Data API)
-
->Project settings
-<img width="1919" height="1929" alt="merged-image-2026-10-03T22-31-04" src="https://github.com/user-attachments/assets/f50b8b69-a5ec-4bae-aef9-a4c30e20b9cb" />
-
-
-## Tables
-
-| Table | Purpose |
-|---|---|
-| `app_users` | User profiles and roles |
-| `branches` | The three branch details |
-| `products` | Product catalogue |
-| `quote_requests` | Customer quote requests |
-| `services`, `faqs`, `testimonials`, `homepage_assets` | Website and mobile app content |
-
-Database tables
-<img width="1919" height="988" alt="image" src="https://github.com/user-attachments/assets/ef247872-d478-4ef6-a834-a402ba121c37" />
-
-<br>
-
-## Relationships and Constraints
-
-- Every table has it's own primary key.
-- `app_users.id` links to `auth.users(id)` and deleting a login also deletes the profile.
-- `testimonials.rating` must be between 1 and 5.
-- Other like a quote's branch and product are stored as plain text and not enforced.
-
-Schema diagram
-<img width="866" height="3925" alt="merged-image-2026-10-03T22-36-00" src="https://github.com/user-attachments/assets/62f7ea96-3d49-4fd5-a702-0acb10b6deac" />
-<img width="940" height="534" alt="image" src="https://github.com/user-attachments/assets/f42c4da1-d0bc-4f4b-b162-bffbea09d6b4" />
-
-<br>
-
-## Authentication
-
-- Supabase Auth with the email provider turned on
-- Email confirmation is on, and anonymous sign-ins are off
-- Roles - Admin, branch managers and Customer are stored in `app_users.role`
-- The functions `is_admin`, `is_staff` and `get_user_branch` support role checks
-
-Auth settings
-<img width="940" height="485" alt="image" src="https://github.com/user-attachments/assets/eaf95b83-c438-4cb5-844b-488d90793ab6" />
-
-<br>
-
-## Row Level Security
-
-- RLS is on for seven tables, with no policies yet. The public Data API returns no data for them.
-- Only the Node API can read and write, because it uses the secret key.
-- RLS is off on `app_users`.
-
-RLS policies
-<img width="940" height="996" alt="image" src="https://github.com/user-attachments/assets/4a1e6f17-99a6-4ec4-8e2f-631e1b87e4cf" />
-
-<br>
-
-## Storage
-
-- One public bucket: `woodlands-assets` (unchanged values: 50 MB default limit, any file type)
-- Two policies: "Public Access" (can only view) and "Admin Uploads" (allows for uploads)
-
-Storage
-<img width="940" height="191" alt="image" src="https://github.com/user-attachments/assets/7d38ef71-2354-446c-b23b-f216e0a255a2" />
->Existing buckets used by WoodLands webapp and mobile app
-
-<img width="940" height="485" alt="image" src="https://github.com/user-attachments/assets/3f28126e-8c75-40bf-8363-b74461faac00" />
-The woodlands-assets bucket polices
-<br>
-
-## Environment and Connection
-> Both mobile and webapp do not touch the database or supabase but talk to the Node API which then relays what the webapp and mobile app require like completing requests, role specific actions and data control. 
-
-- The Node API connects over HTTP / HTTPS using the Supabase client and runs on port 5000.
-- The URL and secret keys are kept within the API's `.env` file, which is included in the `.Gitignore` file so it is excluded in the GitHub commits.
-- The webapp only talks to the Node API.
-- The mobile app only talks to the Node API. It keeps a local SQLite copy for offline use.
-- A direct Postgres connection also exists (using port 5432, database `postgres`).
-  
-
-Connection settings
-<img width="1919" height="1950" alt="merged-image-2026-10-03T22-48-20" src="https://github.com/user-attachments/assets/5231baf5-3e1b-4768-8116-828a301bd408" />
-
-<br>
-
-API connection
-<img width="940" height="313" alt="image" src="https://github.com/user-attachments/assets/ed722227-0b8c-41a2-9482-e108d323b44c" />
+When the final hosting is chosen, only the server addresses in `Apiclient.kt` need to change. Do not make the Android app connect directly to the production SQL database.
