@@ -5,20 +5,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-// Register HttpClient to use Railway first and the local API as fallback.
-builder.Services.AddTransient<HostedFirstFallbackHandler>();
-
-builder.Services
-    .AddHttpClient("NodeApi", client =>
+// Register HttpClient to talk to the Node API
+builder.Services.AddHttpClient("NodeApi", client =>
+{
+    var baseUrl = builder.Configuration["NodeApi:BaseUrl"] ?? "http://localhost:5000/";
+    client.BaseAddress = new Uri(baseUrl);
+    var internalApiKey = builder.Configuration["API_INTERNAL_KEY"];
+    if (!string.IsNullOrWhiteSpace(internalApiKey))
     {
-        var hostedUrl =
-            builder.Configuration["NodeApi:HostedBaseUrl"]
-            ?? "https://insy7315-api-repository-production.up.railway.app/";
-
-        client.BaseAddress = new Uri(hostedUrl);
-        client.Timeout = TimeSpan.FromSeconds(8);
-    })
-    .AddHttpMessageHandler<HostedFirstFallbackHandler>();
+        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Internal-Api-Key", internalApiKey);
+    }
+});
 
 builder.Services.AddScoped<SupabaseAuthService>();
 
