@@ -116,25 +116,73 @@ object SyncManager {
 
     fun isOnline(): Boolean {
         if (!ready) return false
-        val cm = appContext.getSystemService(ConnectivityManager::class.java)
-        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
-        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+
+        return when (val result = ApiClient.get("/api/branches")) {
+            is ApiResult.Success -> true
+
+            /*
+             * HTTP errors still prove that the phone reached the server.
+             * For example, 404/500 means there is a network connection,
+             * even though the request itself failed.
+             */
+            is ApiResult.Failure -> true
+
+            is ApiResult.Offline -> false
+        }
     }
 
-    internal fun checkConnection(syncAfter: Boolean, onResult: (ConnectionStatus) -> Unit) {
+    internal fun checkConnection(
+        syncAfter: Boolean,
+        onResult: (ConnectionStatus) -> Unit
+    ) {
         scope.launch {
-            val online = isOnline()
-            val status = if (!online) {
-                ConnectionStatus(false, false, "No internet connection on this device.")
-            } else {
-                when (val r = ApiClient.get("/api/branches")) {
-                    is ApiResult.Success -> ConnectionStatus(true, true, "The app can reach the Woodlands database.")
-                    is ApiResult.Failure -> ConnectionStatus(true, false, "The server returned an error (${r.code}).")
-                    is ApiResult.Offline -> ConnectionStatus(true, false, "The Woodlands server can't be reached.")
+
+            /*
+             * Do not trust ConnectivityManager alone.
+             *
+             * The actual API request is the source of truth for whether
+             * the application can communicate with the Woodlands service.
+             */
+            val result = ApiClient.get("/api/branches")
+
+            val status = when (result) {
+
+                is ApiResult.Success -> {
+                    ConnectionStatus(
+                        online = true,
+                        database = true,
+                        detail = "The app can reach the Woodlands server and database."
+                    )
+                }
+
+                is ApiResult.Failure -> {
+                    ConnectionStatus(
+                        online = true,
+                        database = false,
+                        detail = "The phone is online, but the Woodlands server returned HTTP ${result.code}."
+                    )
+                }
+
+                is ApiResult.Offline -> {
+                    ConnectionStatus(
+                        online = false,
+                        database = false,
+                        detail = "The phone cannot reach the Woodlands server."
+                    )
                 }
             }
-            mainHandler.post { onResult(status) }
-            if (syncAfter && status.database) syncAll()
+
+            mainHandler.post {
+                onResult(status)
+            }
+
+            if (
+                syncAfter &&
+                status.online &&
+                status.database
+            ) {
+                syncAll()
+            }
         }
     }
     internal fun checkApi(onResult: (List<EndpointStatus>) -> Unit) {

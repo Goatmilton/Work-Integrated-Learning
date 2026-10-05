@@ -8,6 +8,8 @@ import android.widget.TextView
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.net.ConnectivityManager
+import android.net.Network
 
 internal data class ConnectionStatus(val online: Boolean, val database: Boolean, val detail: String)
 
@@ -68,6 +70,17 @@ internal fun MainActivity.connectionsSection() {
     }
 
     refresh.setOnClickListener { run(true) }
+    val cm = getSystemService(ConnectivityManager::class.java)
+    val watcher = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) { root.post { run(false) } }
+        override fun onLost(network: Network) { root.post { run(false) } }
+    }
+    root.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+        override fun onViewAttachedToWindow(v: View) { cm.registerDefaultNetworkCallback(watcher) }
+        override fun onViewDetachedFromWindow(v: View) {
+            try { cm.unregisterNetworkCallback(watcher) } catch (e: Exception) { }
+        }
+    })
     content.addView(root)
     run(false)
 }

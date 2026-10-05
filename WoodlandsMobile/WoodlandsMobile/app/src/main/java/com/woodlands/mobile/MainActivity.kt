@@ -365,9 +365,143 @@ class MainActivity : Activity() {
     }
 
     private fun testimonialsScreen() {
-        pageIntro("Client feedback", "")
-        content.addView(tv("There are no verified client testimonials published yet.", 14, text).apply { setPadding(dp(16), dp(10), dp(16), dp(20)) })
-        cta("Have a project in mind?", "Send a quote request to get started.", "Request a Quote") { showScreen("quote") }
+        pageIntro("Client feedback", "What our customers say about Woodlands Designer Boards.")
+
+        val testimonialsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        content.addView(testimonialsContainer)
+
+        fun renderTestimonials() {
+            testimonialsContainer.removeAllViews()
+
+            val list = db.loadTestimonials()
+
+            if (list.isEmpty()) {
+                testimonialsContainer.addView(
+                    card().apply {
+                        orientation = LinearLayout.VERTICAL
+                        setPadding(dp(16), dp(16), dp(16), dp(16))
+
+                        addView(
+                            tv(
+                                "No testimonials are available right now.",
+                                14,
+                                text
+                            )
+                        )
+
+                        addView(
+                            tv(
+                                "Connect to the internet and try again.",
+                                12,
+                                muted
+                            ).apply {
+                                setPadding(0, dp(6), 0, 0)
+                            }
+                        )
+                    },
+                    marginParams(16, 10, 16, 10)
+                )
+
+                return
+            }
+
+            list.forEach { testimonial ->
+                val cardView = card().apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(16), dp(15), dp(16), dp(15))
+                }
+
+                cardView.addView(
+                    tv(
+                        testimonial.name,
+                        17,
+                        blue
+                    ).apply {
+                        setTypeface(typeface, Typeface.BOLD)
+                    }
+                )
+
+                val metaParts = mutableListOf<String>()
+
+                if (testimonial.role.isNotBlank()) {
+                    metaParts.add(testimonial.role)
+                }
+
+                if (testimonial.location.isNotBlank()) {
+                    metaParts.add(testimonial.location)
+                }
+
+                if (metaParts.isNotEmpty()) {
+                    cardView.addView(
+                        tv(
+                            metaParts.joinToString(" · "),
+                            11,
+                            muted
+                        ).apply {
+                            setPadding(0, dp(3), 0, 0)
+                        }
+                    )
+                }
+
+                val rating = testimonial.rating.coerceIn(1, 5)
+
+                cardView.addView(
+                    tv(
+                        "★".repeat(rating) + "☆".repeat(5 - rating),
+                        16,
+                        tan
+                    ).apply {
+                        setTypeface(typeface, Typeface.BOLD)
+                        setPadding(0, dp(8), 0, 0)
+                    }
+                )
+
+                if (testimonial.review.isNotBlank()) {
+                    cardView.addView(
+                        tv(
+                            "“${testimonial.review}”",
+                            14,
+                            text
+                        ).apply {
+                            setPadding(0, dp(10), 0, 0)
+                            setLineSpacing(dp(2).toFloat(), 1f)
+                        }
+                    )
+                }
+
+                if (testimonial.project.isNotBlank()) {
+                    cardView.addView(
+                        tv(
+                            testimonial.project,
+                            11,
+                            muted
+                        ).apply {
+                            setTypeface(typeface, Typeface.BOLD)
+                            setPadding(0, dp(10), 0, 0)
+                        }
+                    )
+                }
+
+                testimonialsContainer.addView(
+                    cardView,
+                    marginParams(16, 6, 16, 6)
+                )
+            }
+        }
+
+        renderTestimonials()
+        SyncManager.syncAll()
+
+        cta(
+            "Have a project in mind?",
+            "Send a quote request to get started.",
+            "Request a Quote"
+        ) {
+            showScreen("quote")
+        }
     }
 
     private fun faqScreen() {
