@@ -3,48 +3,57 @@ const app = require("../server");
 
 describe("API Health / Basic Endpoint Tests", () => {
 
-    test("GET /api/products should return a response", async () => {
+    test("GET /api/products should return 200 and an array", async () => {
         const response = await request(app)
             .get("/api/products");
 
-        expect(response.status).toBeLessThan(500);
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
     });
 
-    test("GET /api/branches should return a response", async () => {
+    test("GET /api/branches should return 200 and an array", async () => {
         const response = await request(app)
             .get("/api/branches");
 
-        expect(response.status).toBeLessThan(500);
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
     });
 
-    test("GET /api/services should return a response", async () => {
+    test("GET /api/services should return 200 and an array", async () => {
         const response = await request(app)
             .get("/api/services");
 
-        expect(response.status).toBeLessThan(500);
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
     });
 
-    test("GET /api/testimonials should return a response", async () => {
+    test("GET /api/testimonials should return 200 and an array", async () => {
         const response = await request(app)
             .get("/api/testimonials");
 
-        expect(response.status).toBeLessThan(500);
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
     });
 
-    test("GET /api/faqs should return a response", async () => {
+    test("GET /api/faqs should return 200 and an array", async () => {
         const response = await request(app)
             .get("/api/faqs");
 
-        expect(response.status).toBeLessThan(500);
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
     });
 
-    test("GET /api/homepage-assets should return a response", async () => {
+    test("GET /api/homepage-assets should return 200 and an array", async () => {
         const response = await request(app)
             .get("/api/homepage-assets");
 
-        expect(response.status).toBeLessThan(500);
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
     });
-    describe("API Error Handling Tests", () => {
+
+});
+
+describe("API Error Handling Tests", () => {
 
     test("GET unknown endpoint should return 404", async () => {
         const response = await request(app)
@@ -235,5 +244,4 @@ describe("API Delete Validation Tests", () => {
         expect(response.status).toBeLessThan(500);
     });
 
-});
 });
