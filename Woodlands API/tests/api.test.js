@@ -331,4 +331,40 @@ describe("Unit Tests - Helper Functions", () => {
         });
     });
 });
+describe("Authentication Validation Tests", () => {
+    test("POST /api/auth/login with invalid credentials should return 401", async () => {
+        const response = await request(app)
+            .post("/api/auth/login")
+            .send({
+                email: "qa-invalid-user@example.com",
+                password: "DefinitelyWrongPassword123!"
+            });
+
+        expect(response.status).toBe(401);
+        expect(response.body).toHaveProperty("error");
+    });
+
+    test("POST /api/auth/login without credentials should return 401", async () => {
+        const response = await request(app)
+            .post("/api/auth/login")
+            .send({});
+
+        expect(response.status).toBe(401);
+        expect(response.body).toHaveProperty("error");
+    });
+
+    test("POST /api/auth/register with invalid registration data should return 400", async () => {
+        const response = await request(app)
+            .post("/api/auth/register")
+            .send({
+                fullName: "",
+                email: "not-a-valid-email",
+                password: "",
+                phone: ""
+            });
+
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty("error");
+    });
+});
 });
