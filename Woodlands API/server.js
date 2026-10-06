@@ -189,14 +189,37 @@ app.post('/api/products', async (req, res) => {
 });
 
 app.put('/api/products/:id', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('products').update(req.body).eq('id', req.params.id).select();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
 app.delete('/api/products/:id', async (req, res) => {
-    const { data, error } = await supabase.from('products').delete().eq('id', req.params.id).select();
-    if (error) return res.status(500).json({ error: error.message });
+    const id = req.params.id;
+
+    if (!/^\d+$/.test(id)) {
+        return res.status(400).json({
+            error: 'Product ID must be a valid number'
+        });
+    }
+
+    const { data, error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id)
+        .select();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+        return res.status(404).json({
+            error: 'Product not found'
+        });
+    }
+
     res.json({ message: 'Product deleted', data });
 });
 
@@ -247,16 +270,40 @@ app.post('/api/branches', async (req, res) => {
 });
 
 app.put('/api/branches/:id', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('branches').update(req.body).eq('id', req.params.id).select();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
 app.delete('/api/branches/:id', async (req, res) => {
-    const { data, error } = await supabase.from('branches').delete().eq('id', req.params.id).select();
-    if (error) return res.status(500).json({ error: error.message });
+    const id = req.params.id;
+
+    if (!/^\d+$/.test(id)) {
+        return res.status(400).json({
+            error: 'Branch ID must be a valid number'
+        });
+    }
+
+    const { data, error } = await supabase
+        .from('branches')
+        .delete()
+        .eq('id', id)
+        .select();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+        return res.status(404).json({
+            error: 'Branch not found'
+        });
+    }
+
     res.json({ message: 'Branch deleted', data });
 });
+
 
  
 // SERVICES ROUTES (Uses bigint ID)
@@ -275,14 +322,37 @@ app.post('/api/services', async (req, res) => {
 });
 
 app.put('/api/services/:id', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('services').update(req.body).eq('id', req.params.id).select();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
 app.delete('/api/services/:id', async (req, res) => {
-    const { data, error } = await supabase.from('services').delete().eq('id', req.params.id).select();
-    if (error) return res.status(500).json({ error: error.message });
+    const id = req.params.id;
+
+    if (!/^\d+$/.test(id)) {
+        return res.status(400).json({
+            error: 'Service ID must be a valid number'
+        });
+    }
+
+    const { data, error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', id)
+        .select();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+        return res.status(404).json({
+            error: 'Service not found'
+        });
+    }
+
     res.json({ message: 'Service deleted', data });
 });
 
@@ -303,14 +373,37 @@ app.post('/api/testimonials', async (req, res) => {
 });
 
 app.put('/api/testimonials/:id', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('testimonials').update(req.body).eq('id', req.params.id).select();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
 app.delete('/api/testimonials/:id', async (req, res) => {
-    const { data, error } = await supabase.from('testimonials').delete().eq('id', req.params.id).select();
-    if (error) return res.status(500).json({ error: error.message });
+    const id = req.params.id;
+
+    if (!/^\d+$/.test(id)) {
+        return res.status(400).json({
+            error: 'Testimonial ID must be a valid number'
+        });
+    }
+
+    const { data, error } = await supabase
+        .from('testimonials')
+        .delete()
+        .eq('id', id)
+        .select();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+        return res.status(404).json({
+            error: 'Testimonial not found'
+        });
+    }
+
     res.json({ message: 'Testimonial deleted', data });
 });
 
@@ -331,14 +424,37 @@ app.post('/api/faqs', async (req, res) => {
 });
 
 app.put('/api/faqs/:id', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('faqs').update(req.body).eq('id', req.params.id).select();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
 app.delete('/api/faqs/:id', async (req, res) => {
-    const { data, error } = await supabase.from('faqs').delete().eq('id', req.params.id).select();
-    if (error) return res.status(500).json({ error: error.message });
+    const id = req.params.id;
+
+    if (!/^\d+$/.test(id)) {
+        return res.status(400).json({
+            error: 'FAQ ID must be a valid number'
+        });
+    }
+
+    const { data, error } = await supabase
+        .from('faqs')
+        .delete()
+        .eq('id', id)
+        .select();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+        return res.status(404).json({
+            error: 'FAQ not found'
+        });
+    }
+
     res.json({ message: 'FAQ deleted', data });
 });
 
@@ -368,14 +484,37 @@ app.post('/api/quote-requests', async (req, res) => {
 });
 
 app.put('/api/quote-requests/:id', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('quote_requests').update(req.body).eq('id', req.params.id).select();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
 app.delete('/api/quote-requests/:id', async (req, res) => {
-    const { data, error } = await supabase.from('quote_requests').delete().eq('id', req.params.id).select();
-    if (error) return res.status(500).json({ error: error.message });
+    const id = req.params.id;
+
+    if (!/^\d+$/.test(id)) {
+        return res.status(400).json({
+            error: 'Quote request ID must be a valid number'
+        });
+    }
+
+    const { data, error } = await supabase
+        .from('quote_requests')
+        .delete()
+        .eq('id', id)
+        .select();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+        return res.status(404).json({
+            error: 'Quote request not found'
+        });
+    }
+
     res.json({ message: 'Quote request deleted', data });
 });
 function validateRequestBody(req, res) {
