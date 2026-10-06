@@ -1,6 +1,8 @@
 const request = require("supertest");
 const app = require("../server");
 
+const { safeParse, validateRequestBody } = app;
+
 describe("API Health / Basic Endpoint Tests", () => {
 
     test("GET /api/products should return 200 and an array", async () => {
@@ -243,5 +245,90 @@ describe("API Delete Validation Tests", () => {
         expect(response.status).toBeGreaterThanOrEqual(400);
         expect(response.status).toBeLessThan(500);
     });
+describe("Unit Tests - Helper Functions", () => {
+    describe("safeParse()", () => {
+        test("parses a valid JSON array", () => {
+            expect(safeParse('["A", "B", "C"]')).toEqual(["A", "B", "C"]);
+        });
 
+        test("returns an empty array for invalid JSON", () => {
+            expect(safeParse("not valid json")).toEqual([]);
+        });
+
+        test("returns an existing array unchanged", () => {
+            const input = ["A", "B"];
+            expect(safeParse(input)).toEqual(input);
+        });
+
+        test("returns an empty array for null", () => {
+            expect(safeParse(null)).toEqual([]);
+        });
+
+        test("returns an empty array for an empty value", () => {
+            expect(safeParse("")).toEqual([]);
+        });
+    });
+
+    describe("validateRequestBody()", () => {
+        test("accepts a valid non-empty object", () => {
+            const req = {
+                body: {
+                    name: "Test"
+                }
+            };
+
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn()
+            };
+
+            expect(validateRequestBody(req, res)).toBe(true);
+            expect(res.status).not.toHaveBeenCalled();
+            expect(res.json).not.toHaveBeenCalled();
+        });
+
+        test("rejects an empty request body", () => {
+            const req = {
+                body: {}
+            };
+
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn()
+            };
+
+            expect(validateRequestBody(req, res)).toBe(false);
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Request body cannot be empty"
+            });
+        });
+
+        test("rejects a missing request body", () => {
+            const req = {};
+
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn()
+            };
+
+            expect(validateRequestBody(req, res)).toBe(false);
+            expect(res.status).toHaveBeenCalledWith(400);
+        });
+
+        test("rejects an array as a request body", () => {
+            const req = {
+                body: []
+            };
+
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn()
+            };
+
+            expect(validateRequestBody(req, res)).toBe(false);
+            expect(res.status).toHaveBeenCalledWith(400);
+        });
+    });
+});
 });
