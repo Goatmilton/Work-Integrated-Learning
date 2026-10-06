@@ -70,5 +70,61 @@ describe("API Health / Basic Endpoint Tests", () => {
     });
 
 });
+describe("API Input Validation Tests", () => {
 
+    test("POST /api/products with empty body should return an error", async () => {
+        const response = await request(app)
+            .post("/api/products")
+            .send({});
+
+        expect(response.status).toBeGreaterThanOrEqual(400);
+        expect(response.status).toBeLessThan(500);
+    });
+
+    test("POST /api/branches with empty body should return an error", async () => {
+        const response = await request(app)
+            .post("/api/branches")
+            .send({});
+
+        expect(response.status).toBeGreaterThanOrEqual(400);
+        expect(response.status).toBeLessThan(500);
+    });
+
+    test("POST /api/services with empty body should return an error", async () => {
+        const response = await request(app)
+            .post("/api/services")
+            .send({});
+
+        expect(response.status).toBeGreaterThanOrEqual(400);
+        expect(response.status).toBeLessThan(500);
+    });
+
+    test("POST /api/testimonials with empty body should return an error", async () => {
+        const response = await request(app)
+            .post("/api/testimonials")
+            .send({});
+
+        expect(response.status).toBeGreaterThanOrEqual(400);
+        expect(response.status).toBeLessThan(500);
+    });
+
+    test("POST /api/faqs with empty body should return an error", async () => {
+        const response = await request(app)
+            .post("/api/faqs")
+            .send({});
+
+        expect(response.status).toBeGreaterThanOrEqual(400);
+        expect(response.status).toBeLessThan(500);
+    });
+
+    test("POST /api/quote-requests with empty body should return an error", async () => {
+        const response = await request(app)
+            .post("/api/quote-requests")
+            .send({});
+
+        expect(response.status).toBeGreaterThanOrEqual(400);
+        expect(response.status).toBeLessThan(500);
+    });
+
+});
 });

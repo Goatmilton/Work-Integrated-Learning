@@ -182,6 +182,7 @@ app.get('/api/products/:id', async (req, res) => {
 });
 
 app.post('/api/products', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('products').insert([req.body]).select();
     if (error) return res.status(500).json({ error: error.message });
     res.status(201).json(data);
@@ -239,6 +240,7 @@ app.get('/api/branches/:id', async (req, res) => {
 });
 
 app.post('/api/branches', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('branches').insert([req.body]).select();
     if (error) return res.status(500).json({ error: error.message });
     res.status(201).json(data);
@@ -266,6 +268,7 @@ app.get('/api/services', async (req, res) => {
 });
 
 app.post('/api/services', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('services').insert([req.body]).select();
     if (error) return res.status(500).json({ error: error.message });
     res.status(201).json(data);
@@ -293,6 +296,7 @@ app.get('/api/testimonials', async (req, res) => {
 });
 
 app.post('/api/testimonials', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('testimonials').insert([req.body]).select();
     if (error) return res.status(500).json({ error: error.message });
     res.status(201).json(data);
@@ -320,6 +324,7 @@ app.get('/api/faqs', async (req, res) => {
 });
 
 app.post('/api/faqs', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('faqs').insert([req.body]).select();
     if (error) return res.status(500).json({ error: error.message });
     res.status(201).json(data);
@@ -356,6 +361,7 @@ app.get('/api/quote-requests', async (req, res) => {
 });
 
 app.post('/api/quote-requests', async (req, res) => {
+    if (!validateRequestBody(req, res)) return;
     const { data, error } = await supabase.from('quote_requests').insert([req.body]).select();
     if (error) return res.status(500).json({ error: error.message });
     res.status(201).json(data);
@@ -372,7 +378,23 @@ app.delete('/api/quote-requests/:id', async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
     res.json({ message: 'Quote request deleted', data });
 });
+function validateRequestBody(req, res) {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+        res.status(400).json({
+            error: 'Request body must be a valid JSON object'
+        });
+        return false;
+    }
 
+    if (Object.keys(req.body).length === 0) {
+        res.status(400).json({
+            error: 'Request body cannot be empty'
+        });
+        return false;
+    }
+
+    return true;
+}
 // Helper: parse a JSON string into an array (for products' gallery/features/finishes columns)
 function safeParse(value) {
     if (Array.isArray(value)) return value;
